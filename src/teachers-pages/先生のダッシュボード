@@ -1,0 +1,38 @@
+import { Link } from "react-router-dom";
+
+const TeacherDashboard = () => {
+  return (
+    <div style={{ padding: "20px", textAlign: "center" }}>
+      <h1>教師用ダッシュボード</h1>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "15px",
+          marginTop: "30px",
+        }}
+      >
+        <Link to="/students">
+          <button style={{ width: "100%", padding: "20px" }}>生徒記録一覧</button>
+        </Link>
+        <Link to="/competitions">
+          <button style={{ width: "100%", padding: "20px" }}>大会結果一覧</button>
+        </Link>
+        <Link to="/performance">
+          <button style={{ width: "100%", padding: "20px" }}>成績評価のサポート</button>
+        </Link>
+        <Link to="/contacts">
+          <button style={{ width: "100%", padding: "20px" }}>連絡</button>
+        </Link>
+        <Link to="/schedule">
+          <button style={{ width: "100%", padding: "20px" }}>スケジュール管理</button>
+        </Link>
+        <Link to="/activity-comments">
+          <button style={{ width: "100%", padding: "20px" }}>活動記録へのコメント</button>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+export default TeacherDashboard;
