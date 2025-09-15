@@ -8,10 +8,13 @@ import Practice from "./students-pages/Practice";
 import Notifications from "./students-pages/Notifications";
 import Settings from "./students-pages/Settings";
 
+import TeachersRoles from "./teachers-pages/TeachersRoles";
+
 function App() {
   return (
     <Router>
       <Routes>
+        {/* 生徒用 */}
         <Route path="/" element={<Dashboard />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/schedule" element={<Schedule />} />
@@ -19,6 +22,9 @@ function App() {
         <Route path="/practice" element={<Practice />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/settings" element={<Settings />} />
+
+        {/* 教師用 */}
+        <Route path="/teacher/roles" element={<TeachersRoles />} />
       </Routes>
     </Router>
   );
