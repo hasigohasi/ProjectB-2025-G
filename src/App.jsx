@@ -15,7 +15,7 @@ function App() {
   return (
     <Router>
       <Routes>
-<<<<<<< HEAD
+        {/* 生徒用 */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="messages" element={<Messages />} />
@@ -25,19 +25,10 @@ function App() {
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
         </Route>
-=======
-        {/* 生徒用 */}
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/schedule" element={<Schedule />} />
-        <Route path="/roles" element={<Roles />} />
-        <Route path="/practice" element={<Practice />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/settings" element={<Settings />} />
 
         {/* 教師用 */}
         <Route path="/teacher/roles" element={<TeachersRoles />} />
->>>>>>> e341caf90c110264c4cdff4bf548033308c90ebe
+
       </Routes>
     </Router>
   );
