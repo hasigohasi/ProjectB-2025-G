@@ -4,12 +4,13 @@ import Layout from "./components/Layout";
 import Dashboard from "./students-pages/Dashboard";
 import Messages from "./students-pages/Messages";
 import Schedule from "./students-pages/Schedule";
-import Roles from "./students-pages/Roles";
+import StudentsRoles from "./students-pages/StudentsRoles";
 import Practice from "./students-pages/Practice";
 import Notifications from "./students-pages/Notifications";
 import Settings from "./students-pages/Settings";
 
 import TeachersRoles from "./teachers-pages/TeachersRoles";
+import TeachersPractice from "./teachers-pages/TeachersPractice";
 
 function App() {
   return (
@@ -20,7 +21,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="messages" element={<Messages />} />
           <Route path="schedule" element={<Schedule />} />
-          <Route path="roles" element={<Roles />} />
+          <Route path="roles" element={<StudentsRoles />} />
           <Route path="practice" element={<Practice />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
@@ -28,6 +29,7 @@ function App() {
 
         {/* 教師用 */}
         <Route path="/teacher/roles" element={<TeachersRoles />} />
+        <Route path="/teacher/practice" element={<TeachersPractice />} />
 
       </Routes>
     </Router>
