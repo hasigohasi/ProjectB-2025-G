@@ -12,13 +12,22 @@
 }
 
 .sidebar a {
-  color: white;
+  color: #cbd5e1;
   text-decoration: none;
-  margin: 10px 0;
+  font-size: 15px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: flex; /* ← アイコンと文字を横並びに */
+  align-items: center; /* ← 垂直方向を中央に揃える */
+  gap: 10px; /* ← アイコンと文字の間の余白 */
+  transition: background-color 0.2s, color 0.2s;
+  width: 100%; /* ← 横幅を統一 */
+  box-sizing: border-box;
 }
 
 .sidebar a:hover {
-  text-decoration: underline;
+  background-color: #334155;
+  color: #fff;
 }
 
 .content {

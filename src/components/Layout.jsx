@@ -7,13 +7,30 @@ function Layout() {
   return (
     <div className="app-layout">
       <nav className="sidebar">
-        <Link to="/">ホーム</Link>
-        <Link to="/messages">連絡・提出</Link>
-        <Link to="/schedule">スケジュール</Link>
-        <Link to="/roles">役職・仕事</Link>
-        <Link to="/practice">練習記録</Link>
-        <Link to="/notifications">通知・お知らせ</Link>
+        <h2>メニュー</h2>
+        <Link to="/">
+          <span className="material-icons">home</span>ホーム
+        </Link>
+        <Link to="/messages">
+          <span className="material-icons">message</span>連絡・提出
+        </Link>
+        <Link to="/schedule">
+          <span className="material-icons">schedule</span>スケジュール
+        </Link>
+        <Link to="/roles">
+          <span className="material-icons">group</span>役職・仕事
+        </Link>
+        <Link to="/practice">
+          <span className="material-icons">school</span>練習記録
+        </Link>
+        <Link to="/notifications">
+          <span className="material-icons">notifications</span>通知・お知らせ
+        </Link>
         <Link to="/settings">設定</Link>
+        <hr />
+        <h3>教師用</h3>
+        <Link to="/teacher/roles">役職管理</Link>
+        <Link to="/teacher/practice">練習一覧</Link>
       </nav>
       <main className="content">
         {/* ページごとに切り替わる部分 */}

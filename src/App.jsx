@@ -28,8 +28,10 @@ function App() {
         </Route>
 
         {/* 教師用 */}
-        <Route path="/teacher/roles" element={<TeachersRoles />} />
-        <Route path="/teacher/practice" element={<TeachersPractice />} />
+         <Route path="/teacher" element={<Layout />}>
+           <Route path="roles" element={<TeachersRoles />} />
+           <Route path="practice" element={<TeachersPractice />} />
+         </Route>
 
       </Routes>
     </Router>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, getDocs, serverTimestamp, orderBy, query } from "firebase/firestore";
+import "../styles/Practice.css";
 
 function Practice() {
   const [name, setName] = useState("");
