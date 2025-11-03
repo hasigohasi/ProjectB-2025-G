@@ -1,0 +1,138 @@
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { db } from "./firebase";
+import { collection, addDoc } from "firebase/firestore";
+
+const StudentCompetitionResult = () => {
+  const [club, setClub] = useState("");
+  const [grade, setGrade] = useState("");
+  const [name, setName] = useState("");
+  const [result, setResult] = useState("");
+  const [status, setStatus] = useState(""); // 保存ステータス表示用
+
+  const handleSave = async () => {
+    if (!club || !grade || !name || !result) {
+      alert("全ての項目を入力してください。");
+      return;
+    }
+
+    try {
+      setStatus("保存中…");
+
+      // Firestore に書き込み
+      await addDoc(collection(db, "results"), {
+        club,
+        grade,
+        name,
+        result,
+        timestamp: new Date(),
+      });
+
+      // 保存成功したら入力欄をクリア
+      setClub("");
+      setGrade("");
+      setName("");
+      setResult("");
+      setStatus("✅ 保存しました！");
+    } catch (error) {
+      console.error("保存エラー:", error);
+      setStatus("❌ 保存に失敗しました。");
+      alert("保存に失敗しました。コンソールを確認してください。");
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", height: "100vh" }}>
+      {/* サイドバー */}
+      <div style={{ width: "220px", backgroundColor: "#2c3e50", color: "#fff", padding: "20px" }}>
+        <h2 style={{ marginBottom: "30px" }}>生徒メニュー</h2>
+        <nav>
+          <ul style={{ listStyle: "none", padding: 0 }}>
+            <li style={{ marginBottom: "10px" }}>
+              <Link to="/" style={{ color: "#fff", textDecoration: "none" }}>ホーム</Link>
+            </li>
+            <li style={{ margin: "15px 0" }}>
+              <Link to="/practice" style={{ color: "#fff", textDecoration: "none" }}>練習記録</Link>
+            </li>
+            <li style={{ margin: "15px 0" }}>
+              <Link to="/competition" style={{ color: "#fff", textDecoration: "none" }}>大会結果</Link>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+      {/* メイン画面 */}
+      <div style={{ flex: 1, padding: "30px 40px", backgroundColor: "#f8f9fa" }}>
+        <h2 style={{ fontSize: "22px", marginBottom: "15px" }}>大会結果</h2>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            width: "380px",
+            backgroundColor: "#fff",
+            padding: "18px",
+            borderRadius: "10px",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+          }}
+        >
+          <label>
+            部活動名：
+            <input
+              type="text"
+              placeholder="例：サッカー部"
+              value={club}
+              onChange={(e) => setClub(e.target.value)}
+              style={{ width: "100%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+            />
+          </label>
+
+          <label>
+            学年：
+            <input
+              type="text"
+              placeholder="例：2年"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              style={{ width: "100%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+            />
+          </label>
+
+          <label>
+            名前：
+            <input
+              type="text"
+              placeholder="例：山田太郎"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{ width: "100%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+            />
+          </label>
+
+          <label>
+            結果：
+            <textarea
+              placeholder="例：県大会 出場／準優勝 など"
+              value={result}
+              onChange={(e) => setResult(e.target.value)}
+              rows={3}
+              style={{ width: "100%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc", resize: "none" }}
+            />
+          </label>
+
+          <button
+            onClick={handleSave}
+            style={{ padding: "10px", fontSize: "15px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", marginTop: "5px" }}
+          >
+            保存
+          </button>
+
+          {status && <p style={{ marginTop: "5px", fontWeight: "bold" }}>{status}</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StudentCompetitionResult;
