@@ -73,3 +73,13 @@ button:hover {
 
 
 
+/* 土日・祝日背景と文字色 */
+.saturday {
+  background-color: #f0f8ff !important; /* 土曜日は薄青 */
+}
+
+.sunday,
+.holiday {
+  background-color: #ffe6e6 !important; /* 日曜・祝日は薄赤 */
+  color: red !important; /* 日付文字も赤く */
+}
