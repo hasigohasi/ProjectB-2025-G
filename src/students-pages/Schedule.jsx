@@ -103,8 +103,12 @@ export default function CalendarApp() {
         height={600}
         dayCellClassNames={(arg) => {
           const day = arg.date.getDay();
-          return day === 0 || day === 6 ? "bg-gray-200" : "";
-        }}
+          const ymd = arg.date.toISOString().split("T")[0];
+
+          if (day === 0) return "sunday";
+          if (day === 6) return "saturday";
+          return "";
+          }}
         locale="ja"
       />
 

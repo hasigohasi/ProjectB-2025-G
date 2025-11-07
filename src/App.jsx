@@ -1,6 +1,13 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+
+import LoginSelect from "./login-pages/LoginSelect";
+import StudentLogin from "./login-pages/StudentLogin";
+import TeacherLogin from "./login-pages/TeacherLogin";
+import StudentRegister from "./login-pages/StudentRegister";
+import TeacherRegister from "./login-pages/TeacherRegister";
+
 import Dashboard from "./students-pages/Dashboard";
 import Messages from "./students-pages/Messages";
 import Schedule from "./students-pages/Schedule";
@@ -16,9 +23,15 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/*ログインページ */}
+          <Route index element={<LoginSelect />} />
+          <Route path="/student-login" element={<StudentLogin />} />
+          <Route path="/teacher-login" element={<TeacherLogin />} />
+          <Route path="/student-register" element={<StudentRegister />} />
+          <Route path="/teacher-register" element={<TeacherRegister />} />
         {/* 生徒用 */}
         <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
+          <Route path="/student" element={<Dashboard />} />
           <Route path="messages" element={<Messages />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="roles" element={<StudentsRoles />} />
@@ -28,8 +41,10 @@ function App() {
         </Route>
 
         {/* 教師用 */}
-        <Route path="/teacher/roles" element={<TeachersRoles />} />
-        <Route path="/teacher/practice" element={<TeachersPractice />} />
+         <Route path="/teacher" element={<Layout />}>
+           <Route path="roles" element={<TeachersRoles />} />
+           <Route path="practice" element={<TeachersPractice />} />
+         </Route>
 
       </Routes>
     </Router>
