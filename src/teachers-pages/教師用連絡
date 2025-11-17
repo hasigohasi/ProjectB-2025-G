@@ -8,19 +8,20 @@ const Contacts = () => {
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState({});
 
-  const userId = auth.currentUser?.uid;
+  const userId = auth.currentUser?.uid; // ★ この先生の UID
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "messages"), (snapshot) => {
       const msgs = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(msg => msg.recipientType === "teacher"); // 教師宛のみ
+        .filter(msg => msg.recipientId === userId); 
+        // ★ 追加：この先生宛のメッセージだけ表示
 
       setMessages(msgs);
     });
 
     return unsubscribe;
-  }, []);
+  }, [userId]);
 
   const handleReply = async (id) => {
     const reply = replyText[id];
@@ -29,9 +30,11 @@ const Contacts = () => {
     const docRef = doc(db, "messages", id);
     const msg = messages.find(m => m.id === id);
 
-    // serverTimestamp() を new Date() に置き換え
     await updateDoc(docRef, {
-      replies: [...(msg.replies || []), { text: reply, sender: "teacher", timestamp: new Date() }]
+      replies: [
+        ...(msg.replies || []),
+        { text: reply, sender: "teacher", timestamp: new Date() }
+      ]
     });
 
     setReplyText(prev => ({ ...prev, [id]: "" }));
@@ -42,6 +45,7 @@ const Contacts = () => {
       <Sidebar />
       <div style={{ flex: 1, padding: 10 }}>
         <h2>連絡一覧</h2>
+
         {messages.length === 0 ? (
           <p>何もありません。</p>
         ) : (
