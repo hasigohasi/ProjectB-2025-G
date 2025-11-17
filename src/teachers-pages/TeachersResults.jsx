@@ -1,8 +1,8 @@
 // src/TeacherResult.jsx
 import React, { useState } from "react";
-import { db } from "./firebase";
+import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "../components/Layout";
 
 const TeacherResult = () => {
   const [club, setClub] = useState("");
@@ -57,8 +57,6 @@ const TeacherResult = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      <Sidebar />
-
       {/* ✅ メインエリア */}
       <div style={styles.container}>
         <h2>大会結果（教師用）</h2>

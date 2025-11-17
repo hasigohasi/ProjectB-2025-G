@@ -1,8 +1,8 @@
 // src/Contacts.jsx
 import React, { useEffect, useState } from "react";
-import { db, auth } from "./firebase";
+import { db, auth } from "../firebase";
 import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
-import Sidebar from "./components/Sidebar";
+import Sidebar from "../components/Layout";
 
 const Contacts = () => {
   const [messages, setMessages] = useState([]);
@@ -42,7 +42,6 @@ const Contacts = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      <Sidebar />
       <div style={{ flex: 1, padding: 10 }}>
         <h2>連絡一覧</h2>
 

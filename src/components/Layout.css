@@ -4,12 +4,20 @@
 }
 
 .sidebar {
-  width: 200px;
+  position: fixed;        /* 画面に固定 */
+  top: 0;
+  left: 0;               /* 左側に固定 */
+  width: 250px;
+  height: 100vh;          /* 画面全体の高さ */
   background: #2c3e50;
   display: flex;
   flex-direction: column;
   padding: 20px;
+  
+  overflow-y: auto;       /* 中身が多い時はスクロール */
+  box-sizing: border-box; /* パディングで高さがズレないように */
 }
+
 
 .sidebar a {
   color: #cbd5e1;
@@ -31,7 +39,9 @@
 }
 
 .content {
-  flex: 1;
+  margin-left: 250px;
   padding: 20px;
+  width: calc(100% - 250px);
+  min-height: 100vh;
 }
 

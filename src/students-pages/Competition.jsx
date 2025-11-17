@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { db } from "./firebase";
+import { db } from "../firebase";
 import { collection, addDoc } from "firebase/firestore";
 
 const StudentCompetitionResult = () => {
@@ -43,23 +43,6 @@ const StudentCompetitionResult = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      {/* サイドバー */}
-      <div style={{ width: "220px", backgroundColor: "#2c3e50", color: "#fff", padding: "20px" }}>
-        <h2 style={{ marginBottom: "30px" }}>生徒メニュー</h2>
-        <nav>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            <li style={{ marginBottom: "10px" }}>
-              <Link to="/" style={{ color: "#fff", textDecoration: "none" }}>ホーム</Link>
-            </li>
-            <li style={{ margin: "15px 0" }}>
-              <Link to="/practice" style={{ color: "#fff", textDecoration: "none" }}>練習記録</Link>
-            </li>
-            <li style={{ margin: "15px 0" }}>
-              <Link to="/competition" style={{ color: "#fff", textDecoration: "none" }}>大会結果</Link>
-            </li>
-          </ul>
-        </nav>
-      </div>
 
       {/* メイン画面 */}
       <div style={{ flex: 1, padding: "30px 40px", backgroundColor: "#f8f9fa" }}>
@@ -84,7 +67,7 @@ const StudentCompetitionResult = () => {
               placeholder="例：サッカー部"
               value={club}
               onChange={(e) => setClub(e.target.value)}
-              style={{ width: "100%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+              style={{ width: "95%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
             />
           </label>
 
@@ -95,7 +78,7 @@ const StudentCompetitionResult = () => {
               placeholder="例：2年"
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
-              style={{ width: "100%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+              style={{ width: "95%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
             />
           </label>
 
@@ -106,7 +89,7 @@ const StudentCompetitionResult = () => {
               placeholder="例：山田太郎"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={{ width: "100%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
+              style={{ width: "95%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc" }}
             />
           </label>
 
@@ -117,7 +100,7 @@ const StudentCompetitionResult = () => {
               value={result}
               onChange={(e) => setResult(e.target.value)}
               rows={3}
-              style={{ width: "100%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc", resize: "none" }}
+              style={{ width: "95%", padding: "10px", fontSize: "15px", borderRadius: "5px", border: "1px solid #ccc", resize: "none" }}
             />
           </label>
 
