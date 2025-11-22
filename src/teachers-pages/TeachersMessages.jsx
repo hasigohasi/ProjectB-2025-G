@@ -1,95 +1,282 @@
-// src/Contacts.jsx
-import React, { useEffect, useState } from "react";
-import { db, auth } from "../firebase";
-import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
-import Sidebar from "../components/Layout";
+// src/TeacherMessageForm.jsx
+import React, { useState, useEffect } from "react";
+import { db, auth } from "./firebase";
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  doc,
+  serverTimestamp,
+  query,
+  where,
+} from "firebase/firestore";
+import Sidebar from "./components/Sidebar";
 
-const Contacts = () => {
-  const [messages, setMessages] = useState([]);
+const TeacherMessageForm = () => {
+  const [tab, setTab] = useState("send");
+  const [teacher, setTeacher] = useState({ uid: null, email: "", firstName: "", lastName: "" });
+  const [students, setStudents] = useState([]);
+  const [sendTarget, setSendTarget] = useState("");
+  const [sendContent, setSendContent] = useState("");
+  const [sent, setSent] = useState([]);
+  const [received, setReceived] = useState([]);
   const [replyText, setReplyText] = useState({});
 
-  const userId = auth.currentUser?.uid; // ★ この先生の UID
-
+  // 教師情報取得
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "messages"), (snapshot) => {
-      const msgs = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(msg => msg.recipientId === userId); 
-        // ★ 追加：この先生宛のメッセージだけ表示
-
-      setMessages(msgs);
+    const unsub = auth.onAuthStateChanged((user) => {
+      if (user) {
+        const [lastName, firstName] = (user.displayName || "先生").split(" ");
+        setTeacher({
+          uid: user.uid,
+          email: user.email,
+          firstName: firstName || "",
+          lastName: lastName || "",
+        });
+      }
     });
+    return unsub;
+  }, []);
 
-    return unsubscribe;
-  }, [userId]);
+  // 生徒一覧取得
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "students"), (snap) => {
+      setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    return unsub;
+  }, []);
 
-  const handleReply = async (id) => {
-    const reply = replyText[id];
+  // 送信メッセージ取得
+  useEffect(() => {
+    if (!teacher.uid) return;
+    const q = query(collection(db, "messages"), where("senderId", "==", teacher.uid));
+    const unsub = onSnapshot(q, (snap) => {
+      setSent(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    return unsub;
+  }, [teacher.uid]);
+
+  // 受信メッセージ取得
+  useEffect(() => {
+    if (!teacher.uid) return;
+    const q = query(collection(db, "messages"), where("recipientId", "==", teacher.uid));
+    const unsub = onSnapshot(q, (snap) => {
+      setReceived(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    return unsub;
+  }, [teacher.uid]);
+
+  // メッセージ送信
+  const handleSend = async () => {
+    if (!sendTarget || !sendContent) {
+      alert("送信先と内容を入力してください");
+      return;
+    }
+    try {
+      await addDoc(collection(db, "messages"), {
+        senderId: teacher.uid,
+        senderName: `${teacher.lastName} ${teacher.firstName}`,
+        senderEmail: teacher.email,
+        recipientId: sendTarget,
+        content: sendContent,
+        replies: [],
+        createdAt: serverTimestamp(),
+      });
+      setSendContent("");
+      setSendTarget("");
+    } catch (err) {
+      console.error("送信エラー:", err);
+    }
+  };
+
+  // 返信（senderTypeで教師/生徒を判別）
+  const handleReply = async (msg, senderType) => {
+    const reply = replyText[msg.id];
     if (!reply) return;
 
-    const docRef = doc(db, "messages", id);
-    const msg = messages.find(m => m.id === id);
-
+    const docRef = doc(db, "messages", msg.id);
     await updateDoc(docRef, {
-      replies: [
-        ...(msg.replies || []),
-        { text: reply, sender: "teacher", timestamp: new Date() }
-      ]
+      replies: [...(msg.replies || []), { text: reply, senderType, timestamp: new Date() }],
     });
-
-    setReplyText(prev => ({ ...prev, [id]: "" }));
+    setReplyText((prev) => ({ ...prev, [msg.id]: "" }));
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
-      <div style={{ flex: 1, padding: 10 }}>
-        <h2>連絡一覧</h2>
+    <div style={{ display: "flex" }}>
+      <Sidebar />
+      <div style={{ flex: 1, padding: 20 }}>
+        {/* タブ */}
+        <div style={{ marginBottom: 16 }}>
+          <button
+            onClick={() => setTab("send")}
+            style={{
+              marginRight: 8,
+              background: tab === "send" ? "#007bff" : undefined,
+              color: tab === "send" ? "#fff" : undefined,
+              padding: "6px 12px",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+              cursor: "pointer",
+            }}
+          >
+            送信
+          </button>
+          <button
+            onClick={() => setTab("history")}
+            style={{
+              marginRight: 8,
+              background: tab === "history" ? "#007bff" : undefined,
+              color: tab === "history" ? "#fff" : undefined,
+              padding: "6px 12px",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+              cursor: "pointer",
+            }}
+          >
+            送信済み
+          </button>
+          <button
+            onClick={() => setTab("received")}
+            style={{
+              background: tab === "received" ? "#007bff" : undefined,
+              color: tab === "received" ? "#fff" : undefined,
+              padding: "6px 12px",
+              borderRadius: 4,
+              border: "1px solid #ccc",
+              cursor: "pointer",
+            }}
+          >
+            受信
+          </button>
+        </div>
 
-        {messages.length === 0 ? (
-          <p>何もありません。</p>
-        ) : (
-          messages.map(msg => (
-            <div
-              key={msg.id}
-              style={{
-                border: "1px solid gray",
-                padding: 8,
-                marginBottom: 8,
-                fontSize: 12,
-                backgroundColor: "#f5f5f5"
-              }}
-            >
-              <p><strong>{msg.senderName}</strong> (学年: {msg.grade})</p>
-              <p>内容: {msg.content}</p>
+        {/* 送信タブ */}
+        {tab === "send" && (
+          <div>
+            <h3>生徒へメッセージ送信</h3>
+            <div style={{ marginBottom: 10 }}>
+              <select
+                value={sendTarget}
+                onChange={(e) => setSendTarget(e.target.value)}
+                style={{ marginRight: 5, height: 28 }}
+              >
+                <option value="">生徒を選択</option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.lastName} {s.firstName}（{s.email}）
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="内容"
+                value={sendContent}
+                onChange={(e) => setSendContent(e.target.value)}
+                style={{ width: 200, height: 24, marginRight: 5 }}
+              />
+              <button onClick={handleSend} style={{ height: 28 }}>
+                送信
+              </button>
+            </div>
+          </div>
+        )}
 
-              <div style={{ marginTop: 5 }}>
+        {/* 送信済みタブ */}
+        {tab === "history" && (
+          <div>
+            <h3>送信済みメッセージ</h3>
+            {sent.length === 0 && <p>まだ送信がありません。</p>}
+            {sent.map((msg) => (
+              <div
+                key={msg.id}
+                style={{
+                  border: "1px solid gray",
+                  padding: 6,
+                  marginBottom: 6,
+                  fontSize: 12,
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <p>
+                  <strong>{teacher.lastName} {teacher.firstName}</strong>
+                </p>
+                <p>内容: {msg.content}</p>
+
+                {/* 返信表示 */}
                 {msg.replies?.map((r, idx) => (
                   <p key={idx} style={{ margin: 2 }}>
-                    <strong>{r.sender === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
+                    <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
                   </p>
                 ))}
-              </div>
 
-              <div style={{ marginTop: 5 }}>
-                <input
-                  placeholder="返信を入力"
-                  value={replyText[msg.id] || ""}
-                  onChange={(e) => setReplyText(prev => ({ ...prev, [msg.id]: e.target.value }))}
-                  style={{ width: 200, height: 20 }}
-                />
-                <button
-                  onClick={() => handleReply(msg.id)}
-                  style={{ marginLeft: 5, height: 24 }}
-                >
-                  返信
-                </button>
+                {/* 返信入力 */}
+                <div style={{ marginTop: 5 }}>
+                  <input
+                    placeholder="返信を入力"
+                    value={replyText[msg.id] || ""}
+                    onChange={(e) =>
+                      setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
+                    }
+                    style={{ width: 150, height: 20 }}
+                  />
+                  <button onClick={() => handleReply(msg, "teacher")} style={{ marginLeft: 5, height: 24 }}>
+                    返信
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
+        )}
+
+        {/* 受信タブ */}
+        {tab === "received" && (
+          <div>
+            <h3>受信メッセージ</h3>
+            {received.length === 0 && <p>受信メッセージはありません。</p>}
+            {received.map((msg) => (
+              <div
+                key={msg.id}
+                style={{
+                  border: "1px solid gray",
+                  padding: 6,
+                  marginBottom: 6,
+                  fontSize: 12,
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <p>
+                  <strong>{msg.senderName}</strong>（学年: {msg.grade || "-"}）
+                </p>
+                <p>内容: {msg.content}</p>
+
+                {/* 返信表示 */}
+                {msg.replies?.map((r, idx) => (
+                  <p key={idx} style={{ margin: 2 }}>
+                    <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
+                  </p>
+                ))}
+
+                {/* 返信入力 */}
+                <div style={{ marginTop: 5 }}>
+                  <input
+                    placeholder="返信を入力"
+                    value={replyText[msg.id] || ""}
+                    onChange={(e) =>
+                      setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
+                    }
+                    style={{ width: 150, height: 20 }}
+                  />
+                  <button onClick={() => handleReply(msg, "teacher")} style={{ marginLeft: 5, height: 24 }}>
+                    返信
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
   );
 };
 
-export default Contacts;
+export default TeacherMessageForm;
