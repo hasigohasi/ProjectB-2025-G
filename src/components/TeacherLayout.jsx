@@ -8,7 +8,7 @@ function TeacherLayout() {
       <nav className="sidebar">
         <h2 style={{ color: "white" }}>メニュー</h2>
 
-        <h3 style={{ color: "white", fontSize: "20px" }}>教師用</h3>
+        <h3 style={{ color: "white", fontSize: "20px" }}>教員用</h3>
         <Link to="/teacher/dashboard">
         <span className="material-icons">home</span>ホーム
         </Link>
