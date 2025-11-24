@@ -104,7 +104,11 @@ export default function CalendarApp() {
         locale="ja"
         dayCellClassNames={arg => {
           const day = arg.date.getDay();
-          return day === 0 || day === 6 ? "bg-gray-200" : "";
+          const ymd = arg.date.toISOString().split("T")[0];
+
+          if (day === 0) return "sunday";   // ← 日曜
+          if (day === 6) return "saturday"; // ← 土曜
+          return "";
         }}
       />
 

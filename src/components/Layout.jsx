@@ -8,6 +8,7 @@ function Layout() {
     <div className="app-layout">
       <nav className="sidebar">
         <h2 style={{ color: "white" }}>メニュー</h2>
+        <h3 style={{ color: "white", fontSize: "20px" }}>生徒用</h3>
         <Link to="/student">
           <span className="material-icons">home</span>ホーム
         </Link>
@@ -27,12 +28,6 @@ function Layout() {
           <span className="material-icons">emoji_events</span>大会結果
         </Link>
         <hr />
-        <h3 style={{ color: "white", fontSize: "20px" }}>教師用</h3>
-        <Link to="/teacher/dashboard">ダッシュボード</Link>
-        <Link to="/teacher/roles">役職管理</Link>
-        <Link to="/teacher/practice">練習一覧</Link>
-        <Link to="/teacher/results">大会結果一覧</Link>
-        <Link to="/teacher/messages">連絡</Link>
       </nav>
       <main className="content">
         {/* ページごとに切り替わる部分 */}

@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import TeacherLayout from "./components/TeacherLayout";
 
 import LoginSelect from "./login-pages/LoginSelect";
 import StudentLogin from "./login-pages/StudentLogin";
@@ -18,6 +19,7 @@ import Notifications from "./students-pages/Notifications";
 import Settings from "./students-pages/Settings";
 
 import TeacherDashboard from "./teachers-pages/TeachersDashboad"; 
+import TeachersSchedule from "./teachers-pages/Schedule";
 import TeachersRoles from "./teachers-pages/TeachersRoles";
 import TeachersPractice from "./teachers-pages/TeachersPractice";
 import TeachersResults from "./teachers-pages/TeachersResults";
@@ -35,7 +37,7 @@ function App() {
           <Route path="/teacher-register" element={<TeacherRegister />} />
         {/* 生徒用 */}
         <Route path="/" element={<Layout />}>
-          <Route path="/student" element={<Dashboard />} />
+          <Route path="student" element={<Dashboard />} />
           <Route path="messages" element={<StudentsMessages />} />
           <Route path="schedule" element={<Schedule />} />
           <Route path="roles" element={<StudentsRoles />} />
@@ -46,8 +48,9 @@ function App() {
         </Route>
 
         {/* 教師用 */}
-         <Route path="/teacher" element={<Layout />}>
+         <Route path="/teacher" element={<TeacherLayout />}>
            <Route path="dashboard" element={<TeacherDashboard />} />
+           <Route path="schedule" element={<TeachersSchedule />} />
            <Route path="roles" element={<TeachersRoles />} />
            <Route path="practice" element={<TeachersPractice />} />
            <Route path="results" element={<TeachersResults />} />
