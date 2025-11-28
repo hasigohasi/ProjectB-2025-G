@@ -1,115 +1,116 @@
-// 練習記録入力・振り返り
-import React, { useState, useEffect } from "react";
+// src/students-pages/Practice.jsx
+
+import React, { useEffect, useState } from "react";
 import { db } from "../firebase";
-import { collection, addDoc, getDocs, serverTimestamp, orderBy, query } from "firebase/firestore";
-import "../styles/Practice.css";
+import { doc, getDoc, setDoc, addDoc, collection, Timestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 function Practice() {
-  const [name, setName] = useState("");
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [club, setClub] = useState("");
-  const [content, setContent] = useState("");
-  const [reflection, setReflection] = useState("");
-  const [records, setRecords] = useState([]);
+  const [practiceText, setPracticeText] = useState("");
+  const [reviewText, setReviewText] = useState("");
 
-  // データ取得
+  // ▼ Firestore から生徒情報を読み込む
   useEffect(() => {
-    const fetchPractices = async () => {
-      const q = query(collection(db, "practices"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setRecords(data);
-    };
-    fetchPractices();
-  }, []);
+    const fetchStudentData = async () => {
+      if (!user) return;
 
-  // データ送信
+      const ref = doc(db, "students", user.uid);
+      const snap = await getDoc(ref);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+        setFirstName(data.firstName || "");
+        setLastName(data.lastName || "");
+        setClub(data.club || ""); // ← ここが空なら最初の入力後に保存される
+      }
+    };
+
+    fetchStudentData();
+  }, [user]);
+
+  // ▼ 練習内容を保存
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      await addDoc(collection(db, "practices"), {
-        name,
-        club,
-        content,
-        reflection,
-        createdAt: serverTimestamp(),
-      });
-      alert("記録を保存しました！");
-      setName("");
-      setClub("");
-      setContent("");
-      setReflection("");
-      // 再取得
-      const q = query(collection(db, "practices"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      const data = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setRecords(data);
-    } catch (error) {
-      console.error("Error adding document: ", error);
+
+    if (!practiceText) {
+      alert("練習内容を入力してください");
+      return;
     }
+
+    if (!club) {
+      alert("部活動を入力してください");
+      return;
+    }
+
+    // --- ❶ 初回の部活動入力があれば students に保存 ---
+    const studentRef = doc(db, "students", user.uid);
+    const snap = await getDoc(studentRef);
+
+    if (snap.exists() && !snap.data().club) {
+      await setDoc(
+        studentRef,
+        {
+          club: club,
+        },
+        { merge: true }
+      );
+      alert("部活動情報を保存しました！");
+    }
+
+    // --- ❷ 練習記録の保存 ---
+    await addDoc(collection(db, "practices"), {
+    name: `${lastName} ${firstName}`, 
+    club: club,
+    content: practiceText,           
+    reflection: reviewText,           
+    createdAt: Timestamp.now(),
+    });
+
+    alert("練習記録を保存しました！");
+    setPracticeText("");
+    setReviewText("");
   };
 
   return (
-    <div>
-      <h1>練習記録（生徒用）</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>名前: </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>部活動: </label>
-          <input
-            type="text"
-            value={club}
-            onChange={(e) => setClub(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>練習内容: </label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>振り返り: </label>
-          <textarea
-            value={reflection}
-            onChange={(e) => setReflection(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">保存</button>
-      </form>
+    <div style={{ padding: "20px" }}>
+      <h2>練習記録（生徒用）</h2>
 
-      <h2>過去の記録</h2>
-      {records.length === 0 ? (
-        <p>まだ記録がありません。</p>
-      ) : (
-        <ul>
-          {records.map((r) => (
-            <li key={r.id}>
-              <strong>{r.name}（{r.club}）</strong><br />
-              <span>内容: {r.content}</span><br />
-              <span>振り返り: {r.reflection}</span><br />
-              <hr />
-            </li>
-          ))}
-        </ul>
-      )}
+      <form onSubmit={handleSubmit} style={{ marginTop: "20px" }}>
+        <p>氏名：{lastName} {firstName}</p>
+
+        <label>所属部活動</label><br />
+        <input
+          type="text"
+          value={club}
+          onChange={(e) => setClub(e.target.value)}
+          placeholder="例：サッカー部"
+          required
+        /><br /><br />
+
+        <label>練習内容</label><br />
+        <textarea
+          value={practiceText}
+          onChange={(e) => setPracticeText(e.target.value)}
+          placeholder="今日の練習内容を入力"
+          required
+        /><br /><br />
+
+        <label>振り返り</label><br />
+        <textarea
+          value={reviewText}
+          onChange={(e) => setReviewText(e.target.value)}
+          placeholder="振り返りを入力（任意）"
+        /><br /><br />
+
+        <button type="submit">保存する</button>
+      </form>
     </div>
   );
 }
