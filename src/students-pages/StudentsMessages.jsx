@@ -12,6 +12,7 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
+import "../styles/StudentsMessageForm.css";
 
 const StudentMessageForm = () => {
   const [tab, setTab] = useState("send");
@@ -241,98 +242,117 @@ const StudentMessageForm = () => {
         <div>
           <h3>送信済みメッセージ</h3>
           {messages.length === 0 && <p>まだ送信がありません。</p>}
+
           {messages.map((msg) => (
-            <div
-              key={msg.id}
-              style={{
-                border: "1px solid gray",
-                padding: 6,
-                marginBottom: 6,
-                fontSize: 12,
-                backgroundColor: "#f9f9f9",
-              }}
-            >
-              <p>
-                <strong>{msg.senderName}</strong> (学年: {msg.grade})
-              </p>
-              <p>内容: {msg.content}</p>
-              <div style={{ marginTop: 5 }}>
+            <div key={msg.id} className="message-card">
+
+                <div className="bubble-student">
+                  <strong>{msg.senderName}</strong>（学年: {msg.grade}）
+                  <br />
+                  {msg.content}
+                </div>
+
+                {/* 返信一覧 */}
                 {msg.replies?.map((r, idx) => (
-                  <p key={idx} style={{ margin: 2 }}>
+                  <div
+                    key={idx}
+                    className={r.senderType === "teacher" ? "bubble-teacher" : "bubble-student"}
+                  >
                     <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
-                  </p>
+                  </div>
                 ))}
-              </div>
-              <div style={{ marginTop: 5 }}>
-                <input
-                  placeholder="返信を入力"
-                  value={replyText[msg.id] || ""}
-                  onChange={(e) => setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))}
-                  style={{ width: 150, height: 20 }}
-                />
-                <button onClick={() => handleReply(msg.id)} style={{ marginLeft: 5, height: 24 }}>
-                  返信
+
+                {/* 返信フォーム */}
+                <div className="reply-box">
+                  <input
+                    placeholder="返信を入力"
+                    value={replyText[msg.id] || ""}
+                    className="reply-input"
+                    onChange={(e) =>
+                      setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
+                    }
+                  />
+                  <button onClick={() => handleReply(msg.id)} className="reply-btn">
+                    返信
+                  </button>
+                  <button
+                    onClick={() => handleReact(msg.id)}
+                    disabled={reacted[msg.id]}
+                    className="react-btn"
+                  >
+                    ありがとうございます
                 </button>
-                <button
-                  onClick={() => handleReact(msg.id)}
-                  disabled={reacted[msg.id]}
-                  style={{ marginLeft: 5, height: 24 }}
-                >
-                  ありがとうございます
-                </button>
-              </div>
-            </div>
-          ))}
         </div>
-      )}
+      </div>
+    ))}
+  </div>
+)}
 
       {/* ------------------ 受信タブ ------------------ */}
       {tab === "received" && (
         <div>
           <h3>受信メッセージ</h3>
+
           {receivedMessages.length === 0 && <p>まだメッセージは届いていません。</p>}
+
           {receivedMessages.map((msg) => (
-            <div
-              key={msg.id}
-              style={{
-                border: "1px solid gray",
-                padding: 6,
-                marginBottom: 6,
-                fontSize: 12,
-                backgroundColor: "#f9f9f9",
-              }}
-            >
-              <p>
-                <strong>{msg.senderName}</strong> (学年: {msg.grade})
-              </p>
-              <p>内容: {msg.content}</p>
-              <div style={{ marginTop: 5 }}>
-                {msg.replies?.map((r, idx) => (
-                  <p key={idx} style={{ margin: 2 }}>
-                    <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
-                  </p>
-                ))}
+            <div key={msg.id} className="message-card">
+
+              {/* --- 送信者（教師 or 生徒）の吹き出し --- */}
+              <div
+                className={
+                  msg.senderType === "teacher"
+                    ? "bubble-teacher"
+                    : "bubble-student"
+                }
+              >
+                  <strong>{msg.senderName}</strong>（学年: {msg.grade}）
+                  <br/>
+                  {msg.content}
               </div>
-              <div style={{ marginTop: 5 }}>
+
+              {/* --- 返信一覧（教師 or 生徒） --- */}
+              {msg.replies?.map((r, idx) => (
+                <div
+                  key={idx}
+                  className={
+                    r.senderType === "teacher"
+                      ? "bubble-teacher"
+                      : "bubble-student"
+                  }
+                >
+                  <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
+                </div>
+              ))}
+
+              {/* --- 返信入力 --- */}
+              <div className="reply-box">
                 <input
+                  className="reply-input"
                   placeholder="返信を入力"
                   value={replyText[msg.id] || ""}
-                  onChange={(e) => setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))}
-                  style={{ width: 150, height: 20 }}
+                  onChange={(e) =>
+                    setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
+                  }
                 />
-                <button onClick={() => handleReply(msg.id)} style={{ marginLeft: 5, height: 24 }}>
+                <button
+                  className="reply-btn"
+                  onClick={() => handleReply(msg.id)}
+                >
                   返信
                 </button>
                 <button
-                  onClick={() => handleReact(msg.id)}
-                  disabled={reacted[msg.id]}
-                  style={{ marginLeft: 5, height: 24 }}
-                >
-                  ありがとうございます
+                    onClick={() => handleReact(msg.id)}
+                    disabled={reacted[msg.id]}
+                    className="react-btn"
+                  >
+                    ありがとうございます
                 </button>
               </div>
+
             </div>
           ))}
+
         </div>
       )}
     </div>

@@ -14,7 +14,7 @@ function TeacherLogin() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/teacher"); 
+      navigate("/teacher/dashboard"); 
     } catch (err) {
       setError("メールアドレスまたはパスワードが正しくありません");
     }

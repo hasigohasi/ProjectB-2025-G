@@ -1,0 +1,73 @@
+/* 全体 */
+.message-card {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 送信者（生徒）吹き出し：右側 */
+.bubble-student {
+  align-self: flex-end;     /* ← 右寄せ */
+  background: #dfe9f4;
+  padding: 8px 12px;
+  border-radius: 16px 16px 0 16px;
+  max-width: 60%;
+  margin-left: auto;
+  margin-bottom: 8px;
+}
+
+/* 受信（教師）吹き出し：左側 */
+.bubble-teacher {
+  align-self: flex-start;   /* ← 左寄せ */
+  background: #e5e5e5;      /* ← 灰色 */
+  color: #000;
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin: 6px 0;
+  max-width: 70%;
+}
+
+/* 返信入力フォーム */
+.reply-box {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.reply-input {
+  flex-grow: 1;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.reply-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+.react-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: none;
+  background: #dedede;;
+  cursor: pointer;
+}
+
+.react-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.bubble-student,
+.bubble-teacher {
+  font-size: 14px;
+}
