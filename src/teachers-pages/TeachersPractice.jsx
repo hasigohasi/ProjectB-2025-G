@@ -4,7 +4,8 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 
 function TeachersPractice() {
   const [records, setRecords] = useState({});
-  const [openStudents, setOpenStudents] = useState({}); // 展開状態を管理
+  const [openStudents, setOpenStudents] = useState({});
+  const [searchClub, setSearchClub] = useState(""); // 🔍 部活動検索
 
   useEffect(() => {
     const fetchPractices = async () => {
@@ -15,7 +16,6 @@ function TeachersPractice() {
         ...doc.data(),
       }));
 
-      // 生徒名ごとにまとめる
       const grouped = {};
       data.forEach((r) => {
         if (!grouped[r.name]) {
@@ -29,14 +29,12 @@ function TeachersPractice() {
     fetchPractices();
   }, []);
 
-  // 日付を YYYY/MM/DD 形式に整形
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
     const date = timestamp.toDate();
     return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-  // 氏名クリックで展開/非展開を切り替え
   const toggleStudent = (name) => {
     setOpenStudents((prev) => ({
       ...prev,
@@ -44,18 +42,41 @@ function TeachersPractice() {
     }));
   };
 
+  // 🔍 部活検索フィルタ
+  const filteredRecords = Object.keys(records).filter((studentName) =>
+    searchClub === ""
+      ? true
+      : records[studentName].some((r) =>
+          r.club.includes(searchClub)
+        )
+  );
+
   return (
     <div>
       <h1>練習記録（教師用）</h1>
-      {Object.keys(records).length === 0 ? (
-        <p>まだ記録がありません。</p>
+
+      {/* 🔍 部活検索フォーム */}
+      <input
+        type="text"
+        placeholder="部活名で検索（例：サッカー）"
+        value={searchClub}
+        onChange={(e) => setSearchClub(e.target.value)}
+        style={{ padding: "5px", marginBottom: "10px" }}
+      />
+
+      {filteredRecords.length === 0 ? (
+        <p>該当する記録がありません。</p>
       ) : (
         <ul>
-          {Object.keys(records).map((studentName) => (
+          {filteredRecords.map((studentName) => (
             <li key={studentName}>
               <button
                 onClick={() => toggleStudent(studentName)}
-                style={{ fontWeight: "bold", margin: "5px", cursor: "pointer" }}
+                style={{
+                  fontWeight: "bold",
+                  margin: "5px",
+                  cursor: "pointer",
+                }}
               >
                 {studentName}
               </button>
@@ -63,9 +84,12 @@ function TeachersPractice() {
                 <ul style={{ marginLeft: "20px" }}>
                   {records[studentName].map((r) => (
                     <li key={r.id}>
-                      <span>{formatDate(r.createdAt)} </span><br />
-                      <strong>部活動:</strong> {r.club}<br />
-                      <strong>内容:</strong> {r.content}<br />
+                      <span>{formatDate(r.createdAt)} </span>
+                      <br />
+                      <strong>部活動:</strong> {r.club}
+                      <br />
+                      <strong>内容:</strong> {r.content}
+                      <br />
                       <strong>振り返り:</strong> {r.reflection}
                       <hr />
                     </li>
