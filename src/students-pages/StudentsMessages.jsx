@@ -1,6 +1,6 @@
 // src/StudentMessageForm.jsx
 import React, { useState, useEffect } from "react";
-import { db, auth } from "../firebase";
+import { db, auth } from "./firebase";
 import {
   collection,
   addDoc,
@@ -12,7 +12,6 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import "../styles/StudentsMessageForm.css";
 
 const StudentMessageForm = () => {
   const [tab, setTab] = useState("send");
@@ -25,10 +24,9 @@ const StudentMessageForm = () => {
   const [teachers, setTeachers] = useState([]);
   const [recipientId, setRecipientId] = useState("");
 
-  // 受信メッセージ用
   const [receivedMessages, setReceivedMessages] = useState([]);
 
-  // 🔹 ログイン中の生徒情報を取得
+  // --- 生徒情報 ---
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -42,7 +40,7 @@ const StudentMessageForm = () => {
     return unsubscribe;
   }, []);
 
-  // 🔹 教師一覧を取得
+  // --- 教師一覧 ---
   useEffect(() => {
     const loadTeachers = async () => {
       try {
@@ -52,7 +50,15 @@ const StudentMessageForm = () => {
           setTeachers([]);
           return;
         }
-        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const list = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            uid: data.uid || d.id,
+            ...data,
+          };
+        });
+        console.log("👨‍🏫 取得した教師データ:", list);
         setTeachers(list);
       } catch (error) {
         console.log("教師データ取得エラー:", error);
@@ -62,12 +68,13 @@ const StudentMessageForm = () => {
     loadTeachers();
   }, []);
 
-  // 🔹 自分の送信メッセージを取得
+  // --- 自分の送信 ---
   useEffect(() => {
     if (!studentInfo.uid) return;
     const q = query(
       collection(db, "messages"),
-      where("senderId", "==", studentInfo.uid)
+      where("senderId", "==", studentInfo.uid),
+      
     );
     const unsub = onSnapshot(q, (snap) =>
       setMessages(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })))
@@ -75,36 +82,67 @@ const StudentMessageForm = () => {
     return () => unsub();
   }, [studentInfo.uid]);
 
-  // 🔹 受信メッセージを取得
+  // 🔵 受信メッセージ（教師から）- 修正版
   useEffect(() => {
     if (!studentInfo.uid) return;
-    const q = query(
-      collection(db, "messages"),
-      where("recipientId", "==", studentInfo.uid)
-    );
-    const unsub = onSnapshot(q, (snap) =>
-      setReceivedMessages(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })))
-    );
-    return () => unsub();
+    
+    // 自分のドキュメントIDも取得
+    const getMyId = async () => {
+      const studentsSnap = await getDocs(
+        query(collection(db, "students"), where("uid", "==", studentInfo.uid))
+      );
+      const myDocId = studentsSnap.docs[0]?.id;
+      
+      console.log("🔍 受信確認 - 自分のUID:", studentInfo.uid);
+      console.log("🔍 受信確認 - 自分のDocID:", myDocId);
+      
+      // uid または id どちらで送られても受信できるようにする
+      const q = query(
+        collection(db, "messages"),
+        where("senderType", "==", "teacher")
+      );
+      
+      const unsub = onSnapshot(q, (snap) => {
+        const allTeacherMessages = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        console.log("📬 教師からの全メッセージ:", allTeacherMessages);
+        
+        const filtered = allTeacherMessages.filter((msg) => 
+          msg.recipientId === studentInfo.uid || msg.recipientId === myDocId
+        );
+        console.log("✅ 自分宛のメッセージ:", filtered);
+        setReceivedMessages(filtered);
+      });
+      return unsub;
+    };
+    
+    getMyId();
   }, [studentInfo.uid]);
 
-  // 🔹 メッセージ送信
+  // --- 生徒 → 教師 送信 ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!content || !recipientId) {
       alert("送りたい先生を選択してください");
       return;
     }
+    
+    const messageData = {
+      senderId: studentInfo.uid,
+      senderName: studentInfo.name,
+      grade: studentInfo.grade,
+      content: content,
+      recipientId: recipientId,
+      senderType: "student",
+      replies: [],
+      createdAt: serverTimestamp(),
+    };
+    
+    console.log("📤 送信するデータ:", messageData);
+    console.log("📤 recipientId (教師のUID):", recipientId);
+    console.log("📤 選択した教師:", teachers.find(t => t.uid === recipientId));
+    
     try {
-      await addDoc(collection(db, "messages"), {
-        senderId: studentInfo.uid,
-        senderName: studentInfo.name,
-        grade: studentInfo.grade,
-        content,
-        recipientId,
-        replies: [],
-        createdAt: serverTimestamp(),
-      });
+      await addDoc(collection(db, "messages"), messageData);
       setContent("");
       setSendStatus("送信完了");
     } catch (err) {
@@ -113,29 +151,52 @@ const StudentMessageForm = () => {
     }
   };
 
-  // 🔹 返信（senderType を統一）
+  // --- 生徒側の返信（教師 UID に送る） ---
   const handleReply = async (id) => {
     const reply = replyText[id];
     if (!reply) return;
 
-    const docRef = doc(db, "messages", id);
-    const msg = [...messages, ...receivedMessages].find((m) => m.id === id);
+    const original = [...messages, ...receivedMessages].find((m) => m.id === id);
+    if (!original) return;
 
-    await updateDoc(docRef, {
-      replies: [...(msg.replies || []), { text: reply, senderType: "student", timestamp: new Date() }],
+    const teacherUid = original.senderType === "teacher"
+      ? original.senderId
+      : original.recipientId;
+
+    await addDoc(collection(db, "messages"), {
+      senderId: studentInfo.uid,
+      senderName: studentInfo.name,
+      grade: studentInfo.grade,
+      content: reply,
+      recipientId: teacherUid,
+      replies: [],
+      createdAt: serverTimestamp(),
+      senderType: "student",
     });
 
     setReplyText((prev) => ({ ...prev, [id]: "" }));
   };
 
-  // 🔹 「ありがとうございます」リアクション
+  // --- 「ありがとうございます」 ---
   const handleReact = async (id) => {
     if (reacted[id]) return;
-    const docRef = doc(db, "messages", id);
-    const msg = [...messages, ...receivedMessages].find((m) => m.id === id);
 
-    await updateDoc(docRef, {
-      replies: [...(msg.replies || []), { text: "ありがとうございます", senderType: "student", timestamp: new Date() }],
+    const original = [...messages, ...receivedMessages].find((m) => m.id === id);
+    if (!original) return;
+
+    const teacherUid = original.senderType === "teacher"
+      ? original.senderId
+      : original.recipientId;
+
+    await addDoc(collection(db, "messages"), {
+      senderId: studentInfo.uid,
+      senderName: studentInfo.name,
+      grade: studentInfo.grade,
+      content: "ありがとうございます",
+      recipientId: teacherUid,
+      replies: [],
+      createdAt: serverTimestamp(),
+      senderType: "student",
     });
 
     setReacted((prev) => ({ ...prev, [id]: true }));
@@ -143,7 +204,7 @@ const StudentMessageForm = () => {
 
   return (
     <div style={{ padding: 10 }}>
-      {/* タブメニュー */}
+      {/* タブ */}
       <div style={{ marginBottom: 16 }}>
         <button
           onClick={() => setTab("send")}
@@ -154,7 +215,6 @@ const StudentMessageForm = () => {
             padding: "6px 12px",
             borderRadius: 4,
             border: "1px solid #ccc",
-            cursor: "pointer",
           }}
         >
           送信
@@ -168,7 +228,6 @@ const StudentMessageForm = () => {
             padding: "6px 12px",
             borderRadius: 4,
             border: "1px solid #ccc",
-            cursor: "pointer",
           }}
         >
           送信済み
@@ -181,14 +240,13 @@ const StudentMessageForm = () => {
             padding: "6px 12px",
             borderRadius: 4,
             border: "1px solid #ccc",
-            cursor: "pointer",
           }}
         >
           受信
         </button>
       </div>
 
-      {/* ------------------ 送信タブ ------------------ */}
+      {/* 送信 */}
       {tab === "send" && (
         <div>
           <h2>教師にメッセージ</h2>
@@ -199,160 +257,120 @@ const StudentMessageForm = () => {
               style={{ marginRight: 5, height: 28 }}
             >
               <option value="">送りたい先生を選択</option>
-              {teachers.length === 0 ? (
-                <option disabled>（教師データがありません）</option>
-              ) : (
-                teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.lastName} {t.firstName}（{t.email}）
-                  </option>
-                ))
-              )}
+              {teachers.map((t) => (
+                <option key={t.id} value={t.uid || t.id}>
+                  {t.lastName} {t.firstName}（{t.email}）
+                </option>
+              ))}
             </select>
+
             <input
               type="text"
               placeholder="名前"
               value={studentInfo.name}
-              onChange={(e) => setStudentInfo((prev) => ({ ...prev, name: e.target.value }))}
-              style={{ marginRight: 5, width: 100, height: 24 }}
+              onChange={(e) =>
+                setStudentInfo((prev) => ({ ...prev, name: e.target.value }))
+              }
+              style={{ marginRight: 5, width: 100 }}
             />
+
             <input
               type="text"
               placeholder="学年"
               value={studentInfo.grade}
-              onChange={(e) => setStudentInfo((prev) => ({ ...prev, grade: e.target.value }))}
-              style={{ marginRight: 5, width: 60, height: 24 }}
+              onChange={(e) =>
+                setStudentInfo((prev) => ({ ...prev, grade: e.target.value }))
+              }
+              style={{ marginRight: 5, width: 60 }}
             />
+
             <input
               placeholder="内容"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              style={{ width: 200, height: 24, marginRight: 5 }}
+              style={{ width: 200, marginRight: 5 }}
             />
-            <button type="submit" style={{ height: 28 }} disabled={!studentInfo.uid}>
+
+            <button type="submit" disabled={!studentInfo.uid}>
               送信
             </button>
+
             {sendStatus && <span style={{ marginLeft: 5 }}>{sendStatus}</span>}
           </form>
         </div>
       )}
 
-      {/* ------------------ 送信済みタブ ------------------ */}
+      {/* 送信済み */}
       {tab === "history" && (
         <div>
           <h3>送信済みメッセージ</h3>
           {messages.length === 0 && <p>まだ送信がありません。</p>}
-
           {messages.map((msg) => (
-            <div key={msg.id} className="message-card">
+            <div key={msg.id} style={{ border: "1px solid gray", padding: 6, marginBottom: 6 }}>
+              <p>
+                <strong>{msg.senderName}</strong> (学年: {msg.grade})
+              </p>
+              <p>内容: {msg.content}</p>
 
-                <div className="bubble-student">
-                  <strong>{msg.senderName}</strong>（学年: {msg.grade}）
-                  <br />
-                  {msg.content}
-                </div>
-
-                {/* 返信一覧 */}
-                {msg.replies?.map((r, idx) => (
-                  <div
-                    key={idx}
-                    className={r.senderType === "teacher" ? "bubble-teacher" : "bubble-student"}
-                  >
-                    <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
-                  </div>
-                ))}
-
-                {/* 返信フォーム */}
-                <div className="reply-box">
-                  <input
-                    placeholder="返信を入力"
-                    value={replyText[msg.id] || ""}
-                    className="reply-input"
-                    onChange={(e) =>
-                      setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
-                    }
-                  />
-                  <button onClick={() => handleReply(msg.id)} className="reply-btn">
-                    返信
-                  </button>
-                  <button
-                    onClick={() => handleReact(msg.id)}
-                    disabled={reacted[msg.id]}
-                    className="react-btn"
-                  >
-                    ありがとうございます
-                </button>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
-
-      {/* ------------------ 受信タブ ------------------ */}
-      {tab === "received" && (
-        <div>
-          <h3>受信メッセージ</h3>
-
-          {receivedMessages.length === 0 && <p>まだメッセージは届いていません。</p>}
-
-          {receivedMessages.map((msg) => (
-            <div key={msg.id} className="message-card">
-
-              {/* --- 送信者（教師 or 生徒）の吹き出し --- */}
-              <div
-                className={
-                  msg.senderType === "teacher"
-                    ? "bubble-teacher"
-                    : "bubble-student"
-                }
-              >
-                  <strong>{msg.senderName}</strong>（学年: {msg.grade}）
-                  <br/>
-                  {msg.content}
-              </div>
-
-              {/* --- 返信一覧（教師 or 生徒） --- */}
-              {msg.replies?.map((r, idx) => (
-                <div
-                  key={idx}
-                  className={
-                    r.senderType === "teacher"
-                      ? "bubble-teacher"
-                      : "bubble-student"
-                  }
-                >
-                  <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
-                </div>
-              ))}
-
-              {/* --- 返信入力 --- */}
-              <div className="reply-box">
+              <div style={{ marginTop: 5 }}>
                 <input
-                  className="reply-input"
                   placeholder="返信を入力"
                   value={replyText[msg.id] || ""}
                   onChange={(e) =>
                     setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
                   }
+                  style={{ width: 150 }}
                 />
-                <button
-                  className="reply-btn"
-                  onClick={() => handleReply(msg.id)}
-                >
+                <button onClick={() => handleReply(msg.id)} style={{ marginLeft: 5 }}>
                   返信
                 </button>
                 <button
-                    onClick={() => handleReact(msg.id)}
-                    disabled={reacted[msg.id]}
-                    className="react-btn"
-                  >
-                    ありがとうございます
+                  onClick={() => handleReact(msg.id)}
+                  disabled={reacted[msg.id]}
+                  style={{ marginLeft: 5 }}
+                >
+                  ありがとうございます
                 </button>
               </div>
-
             </div>
           ))}
+        </div>
+      )}
 
+      {/* 受信 */}
+      {tab === "received" && (
+        <div>
+          <h3>受信メッセージ</h3>
+          {receivedMessages.length === 0 && <p>まだメッセージは届いていません。</p>}
+          {receivedMessages.map((msg) => (
+            <div key={msg.id} style={{ border: "1px solid gray", padding: 6, marginBottom: 6 }}>
+              <p>
+                <strong>{msg.senderName}</strong> (学年: {msg.grade})
+              </p>
+              <p>内容: {msg.content}</p>
+
+              <div style={{ marginTop: 5 }}>
+                <input
+                  placeholder="返信を入力"
+                  value={replyText[msg.id] || ""}
+                  onChange={(e) =>
+                    setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
+                  }
+                  style={{ width: 150 }}
+                />
+                <button onClick={() => handleReply(msg.id)} style={{ marginLeft: 5 }}>
+                  返信
+                </button>
+                <button
+                  onClick={() => handleReact(msg.id)}
+                  disabled={reacted[msg.id]}
+                  style={{ marginLeft: 5 }}
+                >
+                  ありがとうございます
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
