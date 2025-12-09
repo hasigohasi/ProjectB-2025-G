@@ -1,6 +1,6 @@
 // src/TeacherMessageForm.jsx
-import React, { useState, useEffect } from "react";
-import { db, auth } from "../firebase";
+import React, { useState, useEffect, use } from "react";
+import { db, auth } from "./firebase";
 import {
   collection,
   onSnapshot,
@@ -11,7 +11,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import "../styles/TeachersMessageForm.css";
+import Sidebar from "./components/Sidebar";
 
 const TeacherMessageForm = () => {
   const [tab, setTab] = useState("send");
@@ -23,7 +23,7 @@ const TeacherMessageForm = () => {
   const [received, setReceived] = useState([]);
   const [replyText, setReplyText] = useState({});
 
-  // 教師情報取得
+  // 🔵 教師情報
   useEffect(() => {
     const unsub = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -34,45 +34,75 @@ const TeacherMessageForm = () => {
           firstName: firstName || "",
           lastName: lastName || "",
         });
+        console.log("👨‍🏫 ログイン中の教師UID:", user.uid);
       }
     });
     return unsub;
   }, []);
 
-  // 生徒一覧取得
+  // 🔵 生徒一覧を取得
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "students"), (snap) => {
-      setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const studentList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      console.log("📚 取得した生徒データ:", studentList);
+      setStudents(studentList);
     });
     return unsub;
   }, []);
 
-  // 送信メッセージ取得
+  // 🔵 教師 → 生徒の送信済みメッセージ
   useEffect(() => {
     if (!teacher.uid) return;
     const q = query(collection(db, "messages"), where("senderId", "==", teacher.uid));
     const unsub = onSnapshot(q, (snap) => {
-      setSent(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const sentList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      console.log("📤 送信済みメッセージ:", sentList);
+      setSent(sentList);
     });
     return unsub;
   }, [teacher.uid]);
 
-  // 受信メッセージ取得
-  useEffect(() => {
-    if (!teacher.uid) return;
-    const q = query(collection(db, "messages"), where("recipientId", "==", teacher.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      setReceived(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
-    return unsub;
-  }, [teacher.uid]);
+ // 🔥🔥 生徒 → 教師の受信メッセージ（デバッグ強化版）
+useEffect(() => {
+  const unsubAuth = auth.onAuthStateChanged((user) => {
+    if (!user) return;
 
-  // メッセージ送信
+    console.log("👨‍🏫 教師のUID:", user.uid);
+
+    // まず全メッセージを取得してみる
+    const allMessagesQuery = query(collection(db, "messages"));
+    
+    const unsubAll = onSnapshot(allMessagesQuery, (snap) => {
+      const allMessages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      console.log("📨 全メッセージ:", allMessages);
+      
+      // 自分宛のメッセージをフィルタリング
+      const forMe = allMessages.filter(msg => 
+        msg.recipientId === user.uid && msg.senderType === "student"
+      );
+      console.log("📬 自分宛の生徒からのメッセージ:", forMe);
+      
+      setReceived(forMe);
+    });
+
+    return unsubAll;
+  });
+
+  return unsubAuth;
+}, []);
+
+  // 🔵 教師 → 生徒 送信
   const handleSend = async () => {
     if (!sendTarget || !sendContent) {
       alert("送信先と内容を入力してください");
       return;
     }
+    
+    console.log("📤 教師が送信するデータ:");
+    console.log("  senderId (教師UID):", teacher.uid);
+    console.log("  recipientId (生徒UID/ID):", sendTarget);
+    console.log("  content:", sendContent);
+    
     try {
       await addDoc(collection(db, "messages"), {
         senderId: teacher.uid,
@@ -80,31 +110,35 @@ const TeacherMessageForm = () => {
         senderEmail: teacher.email,
         recipientId: sendTarget,
         content: sendContent,
+        senderType: "teacher",
         replies: [],
         createdAt: serverTimestamp(),
       });
       setSendContent("");
       setSendTarget("");
+      console.log("✅ 送信成功");
     } catch (err) {
-      console.error("送信エラー:", err);
+      console.error("❌ 送信エラー:", err);
     }
   };
 
-  // 返信（senderTypeで教師/生徒を判別）
-  const handleReply = async (msg, senderType) => {
+  // 🔵 返信
+  const handleReply = async (msg) => {
     const reply = replyText[msg.id];
     if (!reply) return;
 
     const docRef = doc(db, "messages", msg.id);
     await updateDoc(docRef, {
-      replies: [...(msg.replies || []), { text: reply, senderType, timestamp: new Date() }],
+      replies: [...(msg.replies || []), { text: reply, sender: "teacher", timestamp: new Date() }],
     });
     setReplyText((prev) => ({ ...prev, [msg.id]: "" }));
   };
 
   return (
     <div style={{ display: "flex" }}>
+      <Sidebar />
       <div style={{ flex: 1, padding: 20 }}>
+
         {/* タブ */}
         <div style={{ marginBottom: 16 }}>
           <button
@@ -121,6 +155,7 @@ const TeacherMessageForm = () => {
           >
             送信
           </button>
+
           <button
             onClick={() => setTab("history")}
             style={{
@@ -135,6 +170,7 @@ const TeacherMessageForm = () => {
           >
             送信済み
           </button>
+
           <button
             onClick={() => setTab("received")}
             style={{
@@ -150,7 +186,7 @@ const TeacherMessageForm = () => {
           </button>
         </div>
 
-        {/* 送信タブ */}
+        {/* 送信 */}
         {tab === "send" && (
           <div>
             <h3>生徒へメッセージ送信</h3>
@@ -162,17 +198,19 @@ const TeacherMessageForm = () => {
               >
                 <option value="">生徒を選択</option>
                 {students.map((s) => (
-                  <option key={s.id} value={s.id}>
+                  <option key={s.id} value={s.uid || s.id}>
                     {s.lastName} {s.firstName}（{s.email}）
                   </option>
                 ))}
               </select>
+
               <input
                 placeholder="内容"
                 value={sendContent}
                 onChange={(e) => setSendContent(e.target.value)}
                 style={{ width: 200, height: 24, marginRight: 5 }}
               />
+
               <button onClick={handleSend} style={{ height: 28 }}>
                 送信
               </button>
@@ -180,50 +218,44 @@ const TeacherMessageForm = () => {
           </div>
         )}
 
-        {/* 送信済みタブ */}
+        {/* 送信済み */}
         {tab === "history" && (
           <div>
             <h3>送信済みメッセージ</h3>
             {sent.length === 0 && <p>まだ送信がありません。</p>}
 
             {sent.map((msg) => (
-              <div key={msg.id} className="message-card bubble-container">
+              <div
+                key={msg.id}
+                style={{
+                  border: "1px solid gray",
+                  padding: 6,
+                  marginBottom: 6,
+                  fontSize: 12,
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <p>
+                  <strong>{teacher.lastName} {teacher.firstName}</strong>
+                </p>
+                <p>内容: {msg.content}</p>
 
-                {/* 教師の送信メッセージ → 右 */}
-                <div className="bubble bubble-right-teacher">
-                  <strong>先生</strong><br />
-                  {msg.content}
-                </div>
-
-                {/* 返信一覧 */}
                 {msg.replies?.map((r, idx) => (
-                  <div
-                    key={idx}
-                    className={
-                      r.senderType === "teacher"
-                        ? "bubble bubble-right-teacher"   // 教師 → 右に青
-                        : "bubble bubble-left-student"    // 生徒 → 左にグレー
-                    }
-                  >
-                    <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
-                  </div>
+                  <p key={idx} style={{ margin: 2 }}>
+                    <strong>{r.sender === "teacher" ? "教師" : "生徒"}:</strong> {r.text}
+                  </p>
                 ))}
 
-                {/* 返信フォーム */}
-                <div className="reply-box">
+                <div style={{ marginTop: 5 }}>
                   <input
                     placeholder="返信を入力"
-                    className="reply-input"
                     value={replyText[msg.id] || ""}
                     onChange={(e) =>
                       setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
                     }
                     style={{ width: 150, height: 20 }}
                   />
-                  <button
-                    className="reply-btn"
-                    onClick={() => handleReply(msg, "teacher")}
-                  >
+                  <button onClick={() => handleReply(msg)} style={{ marginLeft: 5, height: 24 }}>
                     返信
                   </button>
                 </div>
@@ -232,49 +264,38 @@ const TeacherMessageForm = () => {
           </div>
         )}
 
-        {/* 受信タブ */}
+        {/* 受信 */}
         {tab === "received" && (
           <div>
             <h3>受信メッセージ</h3>
             {received.length === 0 && <p>受信メッセージはありません。</p>}
+
             {received.map((msg) => (
-              <div key={msg.id} className="message-card bubble-container">
+              <div
+                key={msg.id}
+                style={{
+                  border: "1px solid gray",
+                  padding: 6,
+                  marginBottom: 6,
+                  fontSize: 12,
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <p>
+                  <strong>{msg.senderName}</strong>（学年: {msg.grade || "-"}）
+                </p>
+                <p>内容: {msg.content}</p>
 
-                {/* 生徒のメッセージ → 左 */}
-                <div className="bubble bubble-left-student">
-                  <strong>{msg.senderName}</strong><br />
-                  {msg.content}
-                </div>
-
-                {/* 返信一覧 */}
-                {msg.replies?.map((r, idx) => (
-                  <div
-                    key={idx}
-                    className={
-                      r.senderType === "teacher"
-                        ? "bubble bubble-right-teacher"   // 教師 → 右に青
-                        : "bubble bubble-left-student"    // 生徒 → 左にグレー
-                    }
-                  >
-                    <strong>{r.senderType === "teacher" ? "教師" : "生徒"}:</strong>
-                    {r.text}
-                  </div>
-                ))}
-                {/* 返信フォーム */}
-                <div className="reply-box">
+                <div style={{ marginTop: 5 }}>
                   <input
                     placeholder="返信を入力"
-                    className="reply-input"
                     value={replyText[msg.id] || ""}
                     onChange={(e) =>
                       setReplyText((prev) => ({ ...prev, [msg.id]: e.target.value }))
                     }
                     style={{ width: 150, height: 20 }}
                   />
-                  <button
-                    className="reply-btn"
-                    onClick={() => handleReply(msg, "teacher")}
-                  >
+                  <button onClick={() => handleReply(msg)} style={{ marginLeft: 5, height: 24 }}>
                     返信
                   </button>
                 </div>
