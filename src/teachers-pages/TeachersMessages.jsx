@@ -1,5 +1,5 @@
 // src/TeacherMessageForm.jsx
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
 import {
   collection,
@@ -10,7 +10,9 @@ import {
   serverTimestamp,
   query,
   where,
+  getDoc,
 } from "firebase/firestore";
+import Sidebar from "./components/Sidebar";
 
 const TeacherMessageForm = () => {
   const [tab, setTab] = useState("send");
@@ -22,18 +24,45 @@ const TeacherMessageForm = () => {
   const [received, setReceived] = useState([]);
   const [replyText, setReplyText] = useState({});
 
-  // 🔵 教師情報
+  // 🔵 教師情報（Firestore から取得）
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged((user) => {
+    const unsub = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        const [lastName, firstName] = (user.displayName || "先生").split(" ");
-        setTeacher({
-          uid: user.uid,
-          email: user.email,
-          firstName: firstName || "",
-          lastName: lastName || "",
-        });
-        console.log("👨‍🏫 ログイン中の教師UID:", user.uid);
+        try {
+          // Firestore から教師データを取得
+          const teacherRef = doc(db, "teachers", user.uid);
+          const teacherSnap = await getDoc(teacherRef);
+
+          if (teacherSnap.exists()) {
+            const data = teacherSnap.data();
+            setTeacher({
+              uid: user.uid,
+              email: user.email,
+              firstName: data.firstName || "",
+              lastName: data.lastName || "",
+            });
+            console.log("👨‍🏫 Firestore から取得した教師データ:", data);
+          } else {
+            // ドキュメントが存在しない場合は displayName から分割
+            const [lastName, firstName] = (user.displayName || "先生").split(" ");
+            setTeacher({
+              uid: user.uid,
+              email: user.email,
+              firstName: firstName || "",
+              lastName: lastName || "",
+            });
+          }
+          console.log("👨‍🏫 ログイン中の教師UID:", user.uid);
+        } catch (error) {
+          console.log("教師データ取得エラー:", error);
+          const [lastName, firstName] = (user.displayName || "先生").split(" ");
+          setTeacher({
+            uid: user.uid,
+            email: user.email,
+            firstName: firstName || "",
+            lastName: lastName || "",
+          });
+        }
       }
     });
     return unsub;
@@ -61,34 +90,34 @@ const TeacherMessageForm = () => {
     return unsub;
   }, [teacher.uid]);
 
- // 🔥🔥 生徒 → 教師の受信メッセージ（デバッグ強化版）
-useEffect(() => {
-  const unsubAuth = auth.onAuthStateChanged((user) => {
-    if (!user) return;
+  // 🔥🔥 生徒 → 教師の受信メッセージ（デバッグ強化版）
+  useEffect(() => {
+    const unsubAuth = auth.onAuthStateChanged((user) => {
+      if (!user) return;
 
-    console.log("👨‍🏫 教師のUID:", user.uid);
+      console.log("👨‍🏫 教師のUID:", user.uid);
 
-    // まず全メッセージを取得してみる
-    const allMessagesQuery = query(collection(db, "messages"));
-    
-    const unsubAll = onSnapshot(allMessagesQuery, (snap) => {
-      const allMessages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      console.log("📨 全メッセージ:", allMessages);
-      
-      // 自分宛のメッセージをフィルタリング
-      const forMe = allMessages.filter(msg => 
-        msg.recipientId === user.uid && msg.senderType === "student"
-      );
-      console.log("📬 自分宛の生徒からのメッセージ:", forMe);
-      
-      setReceived(forMe);
+      // まず全メッセージを取得してみる
+      const allMessagesQuery = query(collection(db, "messages"));
+
+      const unsubAll = onSnapshot(allMessagesQuery, (snap) => {
+        const allMessages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        console.log("📨 全メッセージ:", allMessages);
+
+        // 自分宛のメッセージをフィルタリング
+        const forMe = allMessages.filter(
+          (msg) => msg.recipientId === user.uid && msg.senderType === "student"
+        );
+        console.log("📬 自分宛の生徒からのメッセージ:", forMe);
+
+        setReceived(forMe);
+      });
+
+      return unsubAll;
     });
 
-    return unsubAll;
-  });
-
-  return unsubAuth;
-}, []);
+    return unsubAuth;
+  }, []);
 
   // 🔵 教師 → 生徒 送信
   const handleSend = async () => {
@@ -96,12 +125,12 @@ useEffect(() => {
       alert("送信先と内容を入力してください");
       return;
     }
-    
+
     console.log("📤 教師が送信するデータ:");
     console.log("  senderId (教師UID):", teacher.uid);
     console.log("  recipientId (生徒UID/ID):", sendTarget);
     console.log("  content:", sendContent);
-    
+
     try {
       await addDoc(collection(db, "messages"), {
         senderId: teacher.uid,
@@ -128,15 +157,18 @@ useEffect(() => {
 
     const docRef = doc(db, "messages", msg.id);
     await updateDoc(docRef, {
-      replies: [...(msg.replies || []), { text: reply, sender: "teacher", timestamp: new Date() }],
+      replies: [
+        ...(msg.replies || []),
+        { text: reply, sender: "teacher", timestamp: new Date() },
+      ],
     });
     setReplyText((prev) => ({ ...prev, [msg.id]: "" }));
   };
 
   return (
     <div style={{ display: "flex" }}>
+      <Sidebar />
       <div style={{ flex: 1, padding: 20 }}>
-
         {/* タブ */}
         <div style={{ marginBottom: 16 }}>
           <button
