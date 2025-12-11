@@ -12,6 +12,8 @@ function Practice() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [club, setClub] = useState("");
+  const [grade, setGrade] = useState("");       // ★ DB保存される学年
+  const [gradeSelect, setGradeSelect] = useState(""); // ★ プルダウン選択値
   const [practiceText, setPracticeText] = useState("");
   const [reviewText, setReviewText] = useState("");
 
@@ -28,12 +30,27 @@ function Practice() {
 
         setFirstName(data.firstName || "");
         setLastName(data.lastName || "");
-        setClub(data.club || ""); // ← ここが空なら最初の入力後に保存される
+        setClub(data.club || "");
+
+        if (data.grade) {
+          setGrade(data.grade);
+          setGradeSelect(data.grade); 
+        }
       }
     };
 
     fetchStudentData();
   }, [user]);
+
+  // ▼ "その他" を選んだら gradeText に入力
+  const handleGradeChange = (value) => {
+    setGradeSelect(value);
+    if (value !== "その他") {
+      setGrade(value);
+    } else {
+      setGrade(""); // その他なら別テキスト欄で入力
+    }
+  };
 
   // ▼ 練習内容を保存
   const handleSubmit = async (e) => {
@@ -49,28 +66,36 @@ function Practice() {
       return;
     }
 
-    // --- ❶ 初回の部活動入力があれば students に保存 ---
+    if (!grade) {
+      alert("学年を入力してください");
+      return;
+    }
+
+    // --- ❶ 初回のみ 学年 と 部活 を DB に保存 ---
     const studentRef = doc(db, "students", user.uid);
     const snap = await getDoc(studentRef);
 
-    if (snap.exists() && !snap.data().club) {
-      await setDoc(
-        studentRef,
-        {
-          club: club,
-        },
-        { merge: true }
-      );
-      alert("部活動情報を保存しました！");
+    if (snap.exists()) {
+      const data = snap.data();
+      const updateData = {};
+
+      if (!data.club) updateData.club = club;
+      if (!data.grade) updateData.grade = grade; // ★ 学年保存
+
+      if (Object.keys(updateData).length > 0) {
+        await setDoc(studentRef, updateData, { merge: true });
+        alert("生徒情報（部活・学年）を保存しました！");
+      }
     }
 
     // --- ❷ 練習記録の保存 ---
     await addDoc(collection(db, "practices"), {
-    name: `${lastName} ${firstName}`, 
-    club: club,
-    content: practiceText,           
-    reflection: reviewText,           
-    createdAt: Timestamp.now(),
+      name: `${lastName} ${firstName}`,
+      club: club,
+      grade:grade,
+      content: practiceText,
+      reflection: reviewText,
+      createdAt: Timestamp.now(),
     });
 
     alert("練習記録を保存しました！");
@@ -85,6 +110,33 @@ function Practice() {
       <form onSubmit={handleSubmit} style={{ marginTop: "20px" }}>
         <p>氏名：{lastName} {firstName}</p>
 
+        {/* ▼ 学年（プルダウン → その他なら入力欄） */}
+        <label>学年</label><br />
+        <select
+          value={gradeSelect}
+          onChange={(e) => handleGradeChange(e.target.value)}
+          required
+        >
+          <option value="">選択してください</option>
+          <option value="1年">1年</option>
+          <option value="2年">2年</option>
+          <option value="3年">3年</option>
+        </select>
+        <br /><br />
+
+        {gradeSelect === "その他" && (
+          <>
+            <input
+              type="text"
+              placeholder="学年を入力（例：4年 / B組 など）"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              required
+            /><br /><br />
+          </>
+        )}
+
+        {/* ▼ 部活動 */}
         <label>所属部活動</label><br />
         <input
           type="text"
@@ -94,6 +146,7 @@ function Practice() {
           required
         /><br /><br />
 
+        {/* ▼ 練習内容 */}
         <label>練習内容</label><br />
         <textarea
           value={practiceText}
@@ -102,6 +155,7 @@ function Practice() {
           required
         /><br /><br />
 
+        {/* ▼ 振り返り */}
         <label>振り返り</label><br />
         <textarea
           value={reviewText}

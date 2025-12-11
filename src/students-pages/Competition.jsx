@@ -48,6 +48,7 @@ const StudentCompetitionResult = () => {
 
           // 部活動自動入力（未登録なら空）
           setClub(data.club || "");
+          setGrade(data.grade || "");
         }
       } catch (e) {
         console.error("studentsの読み込みエラー:", e);
