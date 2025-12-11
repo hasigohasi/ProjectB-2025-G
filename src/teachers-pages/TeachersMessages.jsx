@@ -1,6 +1,6 @@
 // src/TeacherMessageForm.jsx
 import React, { useState, useEffect, use } from "react";
-import { db, auth } from "./firebase";
+import { db, auth } from "../firebase";
 import {
   collection,
   onSnapshot,
@@ -11,7 +11,6 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import Sidebar from "./components/Sidebar";
 
 const TeacherMessageForm = () => {
   const [tab, setTab] = useState("send");
@@ -136,7 +135,6 @@ useEffect(() => {
 
   return (
     <div style={{ display: "flex" }}>
-      <Sidebar />
       <div style={{ flex: 1, padding: 20 }}>
 
         {/* タブ */}
