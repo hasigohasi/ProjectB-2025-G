@@ -11,6 +11,8 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 
 const StudentMessageForm = () => {
@@ -23,19 +25,53 @@ const StudentMessageForm = () => {
   const [reacted, setReacted] = useState({});
   const [teachers, setTeachers] = useState([]);
   const [recipientId, setRecipientId] = useState("");
-
   const [receivedMessages, setReceivedMessages] = useState([]);
+  const [gradeOptions] = useState(["1年", "2年", "3年"]);
+  const [isFirstGradeSelection, setIsFirstGradeSelection] = useState(false);
 
-  
-  // --- 生徒情報 ---
+  // --- 生徒情報（ユーザー認証と Firestore から取得） ---
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        setStudentInfo((prev) => ({
-          ...prev,
-          uid: user.uid,
-          name: user.displayName || prev.name,
-        }));
+        try {
+          // Firestore から学生データを取得
+          const studentRef = doc(db, "students", user.uid);
+          const studentSnap = await getDoc(studentRef);
+
+          if (studentSnap.exists()) {
+            const data = studentSnap.data();
+            const fullName = data.lastName && data.firstName 
+              ? `${data.lastName} ${data.firstName}` 
+              : user.displayName || "";
+            
+            console.log("📚 Firestore から取得した学生データ:", data);
+            console.log("📚 構成された名前:", fullName);
+            
+            setStudentInfo({
+              uid: user.uid,
+              name: fullName,
+              grade: data.grade || "",
+            });
+            // 既に学年が保存されている場合
+            if (data.grade) {
+              setIsFirstGradeSelection(true);
+            }
+          } else {
+            // ドキュメントが存在しない場合
+            setStudentInfo({
+              uid: user.uid,
+              name: user.displayName || "",
+              grade: "",
+            });
+          }
+        } catch (error) {
+          console.log("学生データ取得エラー:", error);
+          setStudentInfo((prev) => ({
+            ...prev,
+            uid: user.uid,
+            name: user.displayName || prev.name,
+          }));
+        }
       }
     });
     return unsubscribe;
@@ -74,8 +110,7 @@ const StudentMessageForm = () => {
     if (!studentInfo.uid) return;
     const q = query(
       collection(db, "messages"),
-      where("senderId", "==", studentInfo.uid),
-      
+      where("senderId", "==", studentInfo.uid)
     );
     const unsub = onSnapshot(q, (snap) =>
       setMessages(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })))
@@ -83,31 +118,29 @@ const StudentMessageForm = () => {
     return () => unsub();
   }, [studentInfo.uid]);
 
-  // 🔵 受信メッセージ（教師から）- 修正版
+  // --- 受信メッセージ（教師から）---
   useEffect(() => {
     if (!studentInfo.uid) return;
-    
-    // 自分のドキュメントIDも取得
+
     const getMyId = async () => {
       const studentsSnap = await getDocs(
         query(collection(db, "students"), where("uid", "==", studentInfo.uid))
       );
       const myDocId = studentsSnap.docs[0]?.id;
-      
+
       console.log("🔍 受信確認 - 自分のUID:", studentInfo.uid);
       console.log("🔍 受信確認 - 自分のDocID:", myDocId);
-      
-      // uid または id どちらで送られても受信できるようにする
+
       const q = query(
         collection(db, "messages"),
         where("senderType", "==", "teacher")
       );
-      
+
       const unsub = onSnapshot(q, (snap) => {
         const allTeacherMessages = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         console.log("📬 教師からの全メッセージ:", allTeacherMessages);
-        
-        const filtered = allTeacherMessages.filter((msg) => 
+
+        const filtered = allTeacherMessages.filter((msg) =>
           msg.recipientId === studentInfo.uid || msg.recipientId === myDocId
         );
         console.log("✅ 自分宛のメッセージ:", filtered);
@@ -115,9 +148,35 @@ const StudentMessageForm = () => {
       });
       return unsub;
     };
-    
+
     getMyId();
   }, [studentInfo.uid]);
+
+  // --- 学年が選択されたときの処理 ---
+  const handleGradeChange = async (e) => {
+    const selectedGrade = e.target.value;
+    setStudentInfo((prev) => ({ ...prev, grade: selectedGrade }));
+
+    // 初回選択時に Firestore に保存
+    if (!isFirstGradeSelection && selectedGrade && studentInfo.uid) {
+      try {
+        const studentRef = doc(db, "students", studentInfo.uid);
+        await setDoc(
+          studentRef,
+          {
+            grade: selectedGrade,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+        console.log("✅ 学年を保存しました:", selectedGrade);
+        console.log("📝 保存先:", studentInfo.uid);
+        setIsFirstGradeSelection(true);
+      } catch (error) {
+        console.error("学年保存エラー:", error);
+      }
+    }
+  };
 
   // --- 生徒 → 教師 送信 ---
   const handleSubmit = async (e) => {
@@ -126,7 +185,7 @@ const StudentMessageForm = () => {
       alert("送りたい先生を選択してください");
       return;
     }
-    
+
     const messageData = {
       senderId: studentInfo.uid,
       senderName: studentInfo.name,
@@ -137,15 +196,16 @@ const StudentMessageForm = () => {
       replies: [],
       createdAt: serverTimestamp(),
     };
-    
+
     console.log("📤 送信するデータ:", messageData);
     console.log("📤 recipientId (教師のUID):", recipientId);
-    console.log("📤 選択した教師:", teachers.find(t => t.uid === recipientId));
-    
+    console.log("📤 選択した教師:", teachers.find((t) => t.uid === recipientId));
+
     try {
       await addDoc(collection(db, "messages"), messageData);
       setContent("");
       setSendStatus("送信完了");
+      setTimeout(() => setSendStatus(""), 2000);
     } catch (err) {
       console.error(err);
       setSendStatus("送信失敗");
@@ -160,9 +220,8 @@ const StudentMessageForm = () => {
     const original = [...messages, ...receivedMessages].find((m) => m.id === id);
     if (!original) return;
 
-    const teacherUid = original.senderType === "teacher"
-      ? original.senderId
-      : original.recipientId;
+    const teacherUid =
+      original.senderType === "teacher" ? original.senderId : original.recipientId;
 
     await addDoc(collection(db, "messages"), {
       senderId: studentInfo.uid,
@@ -185,9 +244,8 @@ const StudentMessageForm = () => {
     const original = [...messages, ...receivedMessages].find((m) => m.id === id);
     if (!original) return;
 
-    const teacherUid = original.senderType === "teacher"
-      ? original.senderId
-      : original.recipientId;
+    const teacherUid =
+      original.senderType === "teacher" ? original.senderId : original.recipientId;
 
     await addDoc(collection(db, "messages"), {
       senderId: studentInfo.uid,
@@ -265,25 +323,18 @@ const StudentMessageForm = () => {
               ))}
             </select>
 
-            <input
-              type="text"
-              placeholder="名前"
-              value={studentInfo.name}
-              onChange={(e) =>
-                setStudentInfo((prev) => ({ ...prev, name: e.target.value }))
-              }
-              style={{ marginRight: 5, width: 100 }}
-            />
-
-            <input
-              type="text"
-              placeholder="学年"
+            <select
               value={studentInfo.grade}
-              onChange={(e) =>
-                setStudentInfo((prev) => ({ ...prev, grade: e.target.value }))
-              }
-              style={{ marginRight: 5, width: 60 }}
-            />
+              onChange={handleGradeChange}
+              style={{ marginRight: 5, height: 28 }}
+            >
+              <option value="">学年を選択</option>
+              {gradeOptions.map((grade) => (
+                <option key={grade} value={grade}>
+                  {grade}
+                </option>
+              ))}
+            </select>
 
             <input
               placeholder="内容"
@@ -292,7 +343,7 @@ const StudentMessageForm = () => {
               style={{ width: 200, marginRight: 5 }}
             />
 
-            <button type="submit" disabled={!studentInfo.uid}>
+            <button type="submit" disabled={!studentInfo.uid || !studentInfo.grade}>
               送信
             </button>
 
@@ -346,7 +397,7 @@ const StudentMessageForm = () => {
           {receivedMessages.map((msg) => (
             <div key={msg.id} style={{ border: "1px solid gray", padding: 6, marginBottom: 6 }}>
               <p>
-                <strong>{msg.senderName}</strong> (学年: {msg.grade})
+                <strong>{msg.senderName}</strong>
               </p>
               <p>内容: {msg.content}</p>
 
