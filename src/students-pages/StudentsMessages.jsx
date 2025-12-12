@@ -417,12 +417,14 @@ const StudentMessageForm = () => {
 
           {receivedMessages.map((msg) => (
             <div key={msg.id} className="message-card">
-              <p>
+    
+              <div className="bubble-teacher">
                 <strong>{msg.senderName}</strong>
-              </p>
-              <p>内容: {msg.content}</p>
+                <br />
+                {msg.content}
+              </div>
 
-              <div className="reply-area">
+              <div className="reply-box">
                 <input
                   className="reply-input"
                   placeholder="返信を入力"

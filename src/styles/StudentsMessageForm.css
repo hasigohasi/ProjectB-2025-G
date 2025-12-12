@@ -71,3 +71,26 @@
 .bubble-teacher {
   font-size: 14px;
 }
+
+.reply-area {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.reply-button {
+  background: #007bff;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: none;
+}
+
+.thanks-button {
+  background: #dedede;
+  color: #000;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: none;
+  margin-left: 6px;
+}
