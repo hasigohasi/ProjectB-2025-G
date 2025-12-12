@@ -12,7 +12,6 @@ import {
   where,
   getDoc,
 } from "firebase/firestore";
-import Sidebar from "./components/Sidebar";
 
 const TeacherMessageForm = () => {
   const [tab, setTab] = useState("send");
@@ -167,7 +166,6 @@ const TeacherMessageForm = () => {
 
   return (
     <div style={{ display: "flex" }}>
-      <Sidebar />
       <div style={{ flex: 1, padding: 20 }}>
         {/* タブ */}
         <div style={{ marginBottom: 16 }}>

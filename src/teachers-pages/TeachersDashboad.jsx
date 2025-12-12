@@ -8,7 +8,7 @@ const TeacherDashboard = () => {
 
   const menuItems = [
     { name: "連絡", path: "/teacher/messages" , icon: "message"},
-    { name: "スケジュール", path: "/schedule", icon: "schedule" },
+    { name: "スケジュール", path: "/teacher/schedule", icon: "schedule" },
     { name: "役職・仕事", path: "/teacher/roles", icon: "group" },
     { name: "練習記録", path: "/teacher/practice", icon: "edit_note" },
     { name: "大会結果", path: "/teacher/results", icon: "emoji_events" },
