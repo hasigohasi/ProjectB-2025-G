@@ -31,7 +31,7 @@ export default function CalendarApp() {
   const [currentUser, setCurrentUser] = useState(null);
   const [myClub, setMyClub] = useState("");
 
-  // 🔵 ログインユーザー取得
+  // ログインユーザー取得
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
@@ -39,7 +39,7 @@ export default function CalendarApp() {
     return () => unsubscribe();
   }, []);
 
-  // 🔵 生徒の所属クラブ取得
+  // 生徒の所属クラブ取得
   useEffect(() => {
     const fetchStudentInfo = async () => {
       if (!currentUser) return;
@@ -55,7 +55,7 @@ export default function CalendarApp() {
     fetchStudentInfo();
   }, [currentUser]);
 
-  // 🔵 Firestore 予定取得
+  // Firestore 予定取得
 useEffect(() => {
   if (!currentUser) return;
 
@@ -84,7 +84,7 @@ useEffect(() => {
   return () => unsubscribe();
 }, [currentUser, myClub]);
 
-  // 🔵 日付クリック
+  // 日付クリック
   const handleDateClick = (info) => {
     setSelectedEvent(null);
     setTitle("");
@@ -93,7 +93,7 @@ useEffect(() => {
     setIsDialogOpen(true);
   };
 
-  // 🔵 イベントクリック
+  // イベントクリック
   const handleEventClick = (info) => {
   const event = info.event.extendedProps.raw;
   if (!event) return;
@@ -119,7 +119,7 @@ useEffect(() => {
 };
 
 
-  // 🔵 保存
+  // 保存
   const handleSave = async () => {
     if (!title) return alert("タイトル必須");
 
@@ -142,7 +142,7 @@ useEffect(() => {
     setIsDialogOpen(false);
   };
 
-  // 🔵 削除
+  // 削除
   const handleDelete = async () => {
     if (!selectedEvent) return;
 
