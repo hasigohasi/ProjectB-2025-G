@@ -45,8 +45,8 @@ const StudentMessageForm = () => {
               ? `${data.lastName} ${data.firstName}` 
               : user.displayName || "";
             
-            console.log("📚 Firestore から取得した学生データ:", data);
-            console.log("📚 構成された名前:", fullName);
+            console.log(" Firestore から取得した学生データ:", data);
+            console.log(" 構成された名前:", fullName);
             
             setStudentInfo({
               uid: user.uid,
@@ -96,7 +96,7 @@ const StudentMessageForm = () => {
             ...data,
           };
         });
-        console.log("👨‍🏫 取得した教師データ:", list);
+        console.log(" 取得した教師データ:", list);
         setTeachers(list);
       } catch (error) {
         console.log("教師データ取得エラー:", error);
@@ -136,8 +136,8 @@ const StudentMessageForm = () => {
       );
       const myDocId = studentsSnap.docs[0]?.id;
 
-      console.log("🔍 受信確認 - 自分のUID:", studentInfo.uid);
-      console.log("🔍 受信確認 - 自分のDocID:", myDocId);
+      console.log(" 受信確認 - 自分のUID:", studentInfo.uid);
+      console.log(" 受信確認 - 自分のDocID:", myDocId);
 
       const q = query(
         collection(db, "messages"),
@@ -146,7 +146,7 @@ const StudentMessageForm = () => {
 
       const unsub = onSnapshot(q, (snap) => {
         const allTeacherMessages = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        console.log("📬 教師からの全メッセージ:", allTeacherMessages);
+        console.log(" 教師からの全メッセージ:", allTeacherMessages);
 
         const filtered = allTeacherMessages.filter((msg) =>
           msg.recipientId === studentInfo.uid || msg.recipientId === myDocId
@@ -157,7 +157,7 @@ const StudentMessageForm = () => {
           const timeB = b.createdAt?.toMillis?.() || 0;
           return timeB - timeA;
         });
-        console.log("✅ 自分宛のメッセージ:", filtered);
+        console.log(" 自分宛のメッセージ:", filtered);
         setReceivedMessages(filtered);
       });
       return unsub;
@@ -183,8 +183,8 @@ const StudentMessageForm = () => {
           },
           { merge: true }
         );
-        console.log("✅ 学年を保存しました:", selectedGrade);
-        console.log("📝 保存先:", studentInfo.uid);
+        console.log(" 学年を保存しました:", selectedGrade);
+        console.log(" 保存先:", studentInfo.uid);
         setIsFirstGradeSelection(true);
       } catch (error) {
         console.error("学年保存エラー:", error);
@@ -211,9 +211,9 @@ const StudentMessageForm = () => {
       createdAt: serverTimestamp(),
     };
 
-    console.log("📤 送信するデータ:", messageData);
-    console.log("📤 recipientId (教師のUID):", recipientId);
-    console.log("📤 選択した教師:", teachers.find((t) => t.uid === recipientId));
+    console.log(" 送信するデータ:", messageData);
+    console.log(" recipientId (教師のUID):", recipientId);
+    console.log(" 選択した教師:", teachers.find((t) => t.uid === recipientId));
 
     try {
       await addDoc(collection(db, "messages"), messageData);

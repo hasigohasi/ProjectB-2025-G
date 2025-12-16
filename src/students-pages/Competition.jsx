@@ -95,10 +95,10 @@ const StudentCompetitionResult = () => {
 
       setGrade("");
       setResult("");
-      setStatus("✅ 保存しました！");
+      setStatus(" 保存しました！");
     } catch (error) {
       console.error("保存エラー:", error);
-      setStatus("❌ 保存に失敗しました。");
+      setStatus(" 保存に失敗しました。");
     }
   };
 

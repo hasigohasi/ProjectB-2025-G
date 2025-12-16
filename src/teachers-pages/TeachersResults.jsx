@@ -11,16 +11,16 @@ const TeacherResult = () => {
   const [results, setResults] = useState([]);
   const [status, setStatus] = useState("");
 
-  // 🔍 Firestore 検索処理
+  //  Firestore 検索処理
   const handleSearch = async () => {
     try {
-      setStatus("🔍 検索中...");
+      setStatus(" 検索中...");
       setResults([]);
 
       const snapshot = await getDocs(collection(db, "results"));
       const allData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-      // ✅ 重複削除
+      //  重複削除
       const uniqueData = allData.filter(
         (item, index, self) =>
           index ===
@@ -33,7 +33,7 @@ const TeacherResult = () => {
           )
       );
 
-      // ✅ フィルタリング（入力された条件で絞り込み）
+      //  フィルタリング（入力された条件で絞り込み）
       const filtered = uniqueData.filter((item) => {
         return (
           (!club || item.club?.includes(club)) &&
@@ -43,21 +43,21 @@ const TeacherResult = () => {
       });
 
       if (filtered.length === 0) {
-        setStatus("⚠️ 該当するデータが見つかりません。");
+        setStatus(" 該当するデータが見つかりません。");
         return;
       }
 
       setResults(filtered);
-      setStatus(`✅ ${filtered.length}件取得しました。`);
+      setStatus(` ${filtered.length}件取得しました。`);
     } catch (err) {
       console.error("検索エラー:", err);
-      setStatus("❌ 検索中にエラーが発生しました。");
+      setStatus(" 検索中にエラーが発生しました。");
     }
   };
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      {/* ✅ メインエリア */}
+      {/*  メインエリア */}
       <div style={styles.container}>
         <h2>大会結果（教師用）</h2>
 
@@ -114,7 +114,7 @@ const TeacherResult = () => {
   );
 };
 
-/* ✅ CSS */
+/*  CSS */
 const styles = {
   container: {
     flex: 1,

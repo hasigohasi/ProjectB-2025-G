@@ -35,10 +35,10 @@ export default function CalendarApp() {
   const [currentUser, setCurrentUser] = useState(null);
   const [clubs, setClubs] = useState([]); // ← ★ 部活リスト
 
-  // 🔵 教師判定（教師専用ページなので true で OK）
+  //  教師判定（教師専用ページなので true で OK）
   const isTeacher = true;
 
-  // 🔵 ログインユーザー情報
+  //  ログインユーザー情報
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setCurrentUser(user);
@@ -46,7 +46,7 @@ export default function CalendarApp() {
     return () => unsubscribe();
   }, []);
 
-  // 🔵 Firestore から教師が作成したイベントのみ取得
+  //  Firestore から教師が作成したイベントのみ取得
   useEffect(() => {
     const q = query(
       collection(db, "events"),
@@ -64,7 +64,7 @@ export default function CalendarApp() {
     return () => unsubscribe();
   }, []);
 
-  // 🔵 部活一覧を students から取得
+  //  部活一覧を students から取得
   useEffect(() => {
     const fetchClubs = async () => {
       const snap = await getDocs(collection(db, "students"));
@@ -76,7 +76,7 @@ export default function CalendarApp() {
     fetchClubs();
   }, []);
 
-  // 🔵 カレンター日付クリック → 追加ダイアログ
+  //  カレンター日付クリック → 追加ダイアログ
   const handleDateClick = (info) => {
     setSelectedEvent(null);
     setTitle("");
@@ -86,7 +86,7 @@ export default function CalendarApp() {
     setIsDialogOpen(true);
   };
 
-  // 🔵 イベントクリック → 編集（教師の予定のみ）
+  //  イベントクリック → 編集（教師の予定のみ）
   const handleEventClick = (info) => {
     const event = events.find((e) => e.id === info.event.id);
 
@@ -99,7 +99,7 @@ export default function CalendarApp() {
     setIsDialogOpen(true);
   };
 
-  // 🔵 保存（追加 / 更新）
+  //  保存（追加 / 更新）
   const handleSave = async () => {
     if (!title) return alert("タイトルは必須です");
     if (!targetClub) return alert("対象部活を選択してください");
@@ -127,7 +127,7 @@ export default function CalendarApp() {
     setIsDialogOpen(false);
   };
 
-  // 🔵 削除
+  //  削除
   const handleDelete = async () => {
     if (!selectedEvent) return;
     await deleteDoc(doc(db, "events", selectedEvent.id));
@@ -166,7 +166,7 @@ export default function CalendarApp() {
             onChange={(e) => setDetails(e.target.value)}
           />
 
-          {/* 🔵 部活動選択（フィルタ用） */}
+          {/*  部活動選択（フィルタ用） */}
           <label>対象部活動</label>
           <select
             value={targetClub}

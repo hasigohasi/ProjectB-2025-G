@@ -32,7 +32,7 @@ export default function TeachersRoles() {
     return () => unsubscribe();
   }, []);
 
-  // 🔵 部活動変更 → Firestore "students" から該当生徒を取得
+  //  部活動変更 → Firestore "students" から該当生徒を取得
   const fetchStudentsByClub = async (clubName) => {
     if (!clubName) {
       setStudents([]);
@@ -53,7 +53,7 @@ export default function TeachersRoles() {
     setStudents(data);
   };
 
-  // 🔵 部活動入力時
+  //  部活動入力時
   const handleClubChange = (e) => {
     const value = e.target.value;
     setClub(value);
@@ -61,7 +61,7 @@ export default function TeachersRoles() {
     fetchStudentsByClub(value);
   };
 
-  // 🔵 新規追加
+  //  新規追加
   const handleAddRole = async () => {
     if (!role || !studentName || !club) return;
 
@@ -77,7 +77,7 @@ export default function TeachersRoles() {
     setStudents([]);
   };
 
-  // 🔵 編集
+  //  編集
   const handleEditRole = async (id) => {
     if (!role || !studentName || !club) return;
 
@@ -94,7 +94,7 @@ export default function TeachersRoles() {
     setStudents([]);
   };
 
-  // 🔵 削除
+  //  削除
   const handleDeleteRole = async (id) => {
     await deleteDoc(doc(db, "roles", id));
   };
@@ -106,7 +106,7 @@ export default function TeachersRoles() {
       {/* 入力フォーム */}
       <div className="space-y-2 mb-4">
 
-        {/* 🔵 部活動入力 */}
+        {/*  部活動入力 */}
         <input
           type="text"
           placeholder="部活動（例: サッカー）"
@@ -115,7 +115,7 @@ export default function TeachersRoles() {
           className="border p-2 rounded w-full"
         />
 
-        {/* 🔵 生徒名プルダウン（firstName + lastName） */}
+        {/*  生徒名プルダウン（firstName + lastName） */}
         <select
           value={studentName}
           onChange={(e) => setStudentName(e.target.value)}
@@ -130,7 +130,7 @@ export default function TeachersRoles() {
           ))}
         </select>
 
-        {/* 🔵 役職 */}
+        {/*  役職 */}
         <input
           type="text"
           placeholder="役職（例: 部長）"
@@ -156,7 +156,7 @@ export default function TeachersRoles() {
         )}
       </div>
 
-      {/* 🔵 一覧表示（部活ごとにグループ化して表示） */}
+      {/*  一覧表示（部活ごとにグループ化して表示） */}
       <div className="space-y-6">
         {(() => {
           // 部活ごとにグループ化

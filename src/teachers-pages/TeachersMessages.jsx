@@ -12,7 +12,6 @@ import {
   where,
   getDoc,
 } from "firebase/firestore";
-import Sidebar from "./components/Sidebar";
 import "../styles/TeachersMessageForm.css";
 
 const TeacherMessageForm = () => {
@@ -25,7 +24,7 @@ const TeacherMessageForm = () => {
   const [received, setReceived] = useState([]);
   const [replyText, setReplyText] = useState({});
 
-  // 🔵 教師情報（Firestore から取得）
+  // 教師情報（Firestore から取得）
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async (user) => {
       if (user) {
@@ -42,7 +41,7 @@ const TeacherMessageForm = () => {
               firstName: data.firstName || "",
               lastName: data.lastName || "",
             });
-            console.log("👨‍🏫 Firestore から取得した教師データ:", data);
+            console.log(" Firestore から取得した教師データ:", data);
           } else {
             // ドキュメントが存在しない場合は displayName から分割
             const [lastName, firstName] = (user.displayName || "先生").split(" ");
@@ -53,7 +52,7 @@ const TeacherMessageForm = () => {
               lastName: lastName || "",
             });
           }
-          console.log("👨‍🏫 ログイン中の教師UID:", user.uid);
+          console.log(" ログイン中の教師UID:", user.uid);
         } catch (error) {
           console.log("教師データ取得エラー:", error);
           const [lastName, firstName] = (user.displayName || "先生").split(" ");
@@ -69,17 +68,17 @@ const TeacherMessageForm = () => {
     return unsub;
   }, []);
 
-  // 🔵 生徒一覧を取得
+  //  生徒一覧を取得
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "students"), (snap) => {
       const studentList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      console.log("📚 取得した生徒データ:", studentList);
+      console.log(" 取得した生徒データ:", studentList);
       setStudents(studentList);
     });
     return unsub;
   }, []);
 
-  // 🔵 教師 → 生徒の送信済みメッセージ
+  //  教師 → 生徒の送信済みメッセージ
   useEffect(() => {
     if (!teacher.uid) return;
     const q = query(collection(db, "messages"), where("senderId", "==", teacher.uid));
@@ -91,25 +90,25 @@ const TeacherMessageForm = () => {
         const timeB = b.createdAt?.toMillis?.() || 0;
         return timeB - timeA;
       });
-      console.log("📤 送信済みメッセージ:", sentList);
+      console.log(" 送信済みメッセージ:", sentList);
       setSent(sentList);
     });
     return unsub;
   }, [teacher.uid]);
 
-  // 🥥🔥 生徒 → 教師の受信メッセージ（デバッグ強化版）
+  //  生徒 → 教師の受信メッセージ（デバッグ強化版）
   useEffect(() => {
     const unsubAuth = auth.onAuthStateChanged((user) => {
       if (!user) return;
 
-      console.log("👨‍🏫 教師のUID:", user.uid);
+      console.log(" 教師のUID:", user.uid);
 
       // まず全メッセージを取得してみる
       const allMessagesQuery = query(collection(db, "messages"));
 
       const unsubAll = onSnapshot(allMessagesQuery, (snap) => {
         const allMessages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        console.log("📨 全メッセージ:", allMessages);
+        console.log(" 全メッセージ:", allMessages);
 
         // 自分宛のメッセージをフィルタリング
         const forMe = allMessages.filter(
@@ -121,7 +120,7 @@ const TeacherMessageForm = () => {
           const timeB = b.createdAt?.toMillis?.() || 0;
           return timeB - timeA;
         });
-        console.log("📬 自分宛の生徒からのメッセージ:", forMe);
+        console.log(" 自分宛の生徒からのメッセージ:", forMe);
 
         setReceived(forMe);
       });
@@ -132,14 +131,14 @@ const TeacherMessageForm = () => {
     return unsubAuth;
   }, []);
 
-  // 🔵 教師 → 生徒 送信
+  //  教師 → 生徒 送信
   const handleSend = async () => {
     if (!sendTarget || !sendContent) {
       alert("送信先と内容を入力してください");
       return;
     }
 
-    console.log("📤 教師が送信するデータ:");
+    console.log(" 教師が送信するデータ:");
     console.log("  senderId (教師UID):", teacher.uid);
     console.log("  recipientId (生徒UID/ID):", sendTarget);
     console.log("  content:", sendContent);
@@ -157,13 +156,13 @@ const TeacherMessageForm = () => {
       });
       setSendContent("");
       setSendTarget("");
-      console.log("✅ 送信成功");
+      console.log(" 送信成功");
     } catch (err) {
-      console.error("❌ 送信エラー:", err);
+      console.error(" 送信エラー:", err);
     }
   };
 
-  // 🔵 返信（送信済みタブでのみ使用）
+  //  返信（送信済みタブでのみ使用）
   const handleReply = async (msg) => {
     const reply = replyText[msg.id];
     if (!reply) return;
@@ -185,7 +184,6 @@ const TeacherMessageForm = () => {
 
   return (
     <div style={{ display: "flex" }}>
-      <Sidebar />
       <div style={{ flex: 1, padding: 20 }}>
         {/* タブ */}
         <div style={{ marginBottom: 16 }}>
